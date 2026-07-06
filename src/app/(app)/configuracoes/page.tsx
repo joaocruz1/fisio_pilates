@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getUsoMensal } from "@/lib/ai/usage";
 import { signOut } from "@/server/actions/auth";
 import { requireTenant } from "@/server/auth";
 
@@ -12,6 +13,7 @@ export const metadata = { title: "Configurações" };
 
 export default async function ConfiguracoesPage() {
   const { user, profile, tenant } = await requireTenant();
+  const uso = await getUsoMensal(tenant.id);
 
   return (
     <>
@@ -61,9 +63,19 @@ export default async function ConfiguracoesPage() {
           <CardHeader>
             <CardTitle>Uso de IA neste mês</CardTitle>
             <CardDescription>
-              Disponível quando os relatórios com IA forem ativados.
+              US$ {uso.gasto.toFixed(2)} de US$ {uso.limite.toFixed(2)} da sua cota mensal.
             </CardDescription>
           </CardHeader>
+          <CardContent>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full bg-primary"
+                style={{
+                  width: `${uso.limite > 0 ? Math.min(100, (uso.gasto / uso.limite) * 100) : 0}%`,
+                }}
+              />
+            </div>
+          </CardContent>
         </Card>
 
         <Card>

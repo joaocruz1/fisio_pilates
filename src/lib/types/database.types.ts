@@ -593,6 +593,91 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      ai_reports: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          student_id: string;
+          report_type: string;
+          period_start: string | null;
+          period_end: string | null;
+          status: string;
+          model: string | null;
+          structured: Json;
+          content_md: string | null;
+          input_snapshot: Json;
+          input_hash: string;
+          citations: Json;
+          usage: Json;
+          error_message: string | null;
+          approved_at: string | null;
+          requested_by: string;
+          created_at: string;
+          completed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          student_id: string;
+          report_type: string;
+          period_start?: string | null;
+          period_end?: string | null;
+          status?: string;
+          model?: string | null;
+          structured?: Json;
+          content_md?: string | null;
+          input_snapshot?: Json;
+          input_hash: string;
+          citations?: Json;
+          usage?: Json;
+          error_message?: string | null;
+          approved_at?: string | null;
+          requested_by: string;
+          created_at?: string;
+          completed_at?: string | null;
+        };
+        Update: {
+          status?: string;
+          model?: string | null;
+          structured?: Json;
+          content_md?: string | null;
+          input_snapshot?: Json;
+          citations?: Json;
+          usage?: Json;
+          error_message?: string | null;
+          approved_at?: string | null;
+          completed_at?: string | null;
+        };
+        Relationships: [];
+      };
+      ai_usage_log: {
+        Row: {
+          id: number;
+          tenant_id: string;
+          user_id: string | null;
+          kind: string;
+          model: string | null;
+          input_tokens: number | null;
+          output_tokens: number | null;
+          cost_usd: number | null;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: never;
+          tenant_id: string;
+          user_id?: string | null;
+          kind: string;
+          model?: string | null;
+          input_tokens?: number | null;
+          output_tokens?: number | null;
+          cost_usd?: number | null;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
