@@ -75,3 +75,20 @@ export const rotuloAparelho: Record<Aparelho, string> = {
   accessories: "Acessórios",
   other: "Outro",
 };
+
+// --- Documentos ---
+export const DOC_KINDS = [
+  "exam",
+  "postural_photo",
+  "medical_report",
+  "consent_form",
+  "other",
+] as const;
+export type DocKind = (typeof DOC_KINDS)[number];
+export const rotuloDocKind: Record<DocKind, string> = {
+  exam: "Exames",
+  postural_photo: "Fotos posturais",
+  medical_report: "Laudos",
+  consent_form: "Termos",
+  other: "Outros",
+};

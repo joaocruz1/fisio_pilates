@@ -37,3 +37,20 @@ export function linkWhatsApp(phone: string | null | undefined): string | null {
   const comDDI = d.startsWith("55") ? d : `55${d}`;
   return `https://wa.me/${comDDI}`;
 }
+
+/** Slug seguro para nomes de arquivo (sem acentos, minúsculo, hifenizado). */
+export function slugify(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** Formata bytes para uma string legível (KB/MB). */
+export function formatarTamanho(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}

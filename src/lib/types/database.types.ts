@@ -468,6 +468,50 @@ export type Database = {
         };
         Relationships: [];
       };
+      documents: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          student_id: string | null;
+          kind: string;
+          bucket: string;
+          storage_path: string;
+          file_name: string;
+          mime_type: string;
+          size_bytes: number;
+          taken_at: string | null;
+          description: string | null;
+          extracted_text: string | null;
+          uploaded_by: string;
+          created_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          student_id?: string | null;
+          kind?: string;
+          bucket?: string;
+          storage_path: string;
+          file_name: string;
+          mime_type: string;
+          size_bytes: number;
+          taken_at?: string | null;
+          description?: string | null;
+          extracted_text?: string | null;
+          uploaded_by: string;
+          created_at?: string;
+          deleted_at?: string | null;
+        };
+        Update: {
+          kind?: string;
+          taken_at?: string | null;
+          description?: string | null;
+          extracted_text?: string | null;
+          deleted_at?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
