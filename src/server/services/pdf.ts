@@ -16,3 +16,13 @@ export async function extrairTextoPdf(bytes: Uint8Array): Promise<string | null>
     return null;
   }
 }
+
+/** Extrai o texto página a página (para a ingestão do RAG em lotes). */
+export async function extrairPaginasPdf(
+  bytes: Uint8Array,
+): Promise<{ totalPages: number; pages: string[] }> {
+  const pdf = await getDocumentProxy(bytes);
+  const { totalPages, text } = await extractText(pdf, { mergePages: false });
+  const pages = Array.isArray(text) ? text : [text];
+  return { totalPages, pages };
+}

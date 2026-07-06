@@ -512,9 +512,111 @@ export type Database = {
         };
         Relationships: [];
       };
+      kb_documents: {
+        Row: {
+          id: string;
+          tenant_id: string | null;
+          scope: string;
+          title: string;
+          author: string | null;
+          storage_path: string;
+          source_type: string;
+          license_note: string | null;
+          embedding_model: string | null;
+          status: string;
+          total_pages: number | null;
+          processed_pages: number;
+          chunk_count: number;
+          error_message: string | null;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id?: string | null;
+          scope: string;
+          title: string;
+          author?: string | null;
+          storage_path: string;
+          source_type?: string;
+          license_note?: string | null;
+          embedding_model?: string | null;
+          status?: string;
+          total_pages?: number | null;
+          processed_pages?: number;
+          chunk_count?: number;
+          error_message?: string | null;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          title?: string;
+          author?: string | null;
+          license_note?: string | null;
+          embedding_model?: string | null;
+          status?: string;
+          total_pages?: number | null;
+          processed_pages?: number;
+          chunk_count?: number;
+          error_message?: string | null;
+        };
+        Relationships: [];
+      };
+      kb_chunks: {
+        Row: {
+          id: number;
+          document_id: string;
+          tenant_id: string | null;
+          scope: string;
+          content: string;
+          context_header: string | null;
+          page_start: number | null;
+          page_end: number | null;
+          token_count: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: never;
+          document_id: string;
+          tenant_id?: string | null;
+          scope: string;
+          content: string;
+          context_header?: string | null;
+          page_start?: number | null;
+          page_end?: number | null;
+          token_count?: number | null;
+          embedding: string;
+          created_at?: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      match_kb_chunks: {
+        Args: {
+          query_embedding: string;
+          query_text: string;
+          p_tenant_id: string | null;
+          match_count?: number;
+          rrf_k?: number;
+          semantic_weight?: number;
+          full_text_weight?: number;
+        };
+        Returns: {
+          id: number;
+          document_id: string;
+          content: string;
+          context_header: string | null;
+          page_start: number | null;
+          similarity: number;
+          rrf_score: number;
+        }[];
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

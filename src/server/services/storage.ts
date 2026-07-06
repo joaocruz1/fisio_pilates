@@ -26,3 +26,12 @@ export function pathDocumento(
   const base = slugify(fileName.replace(/\.[^.]+$/, "")).slice(0, 40) || "arquivo";
   return `${tenantId}/${studentId ?? "tenant"}/${docId}-${base}${ext}`;
 }
+
+// --- Base de conhecimento (RAG) ---
+export const KB_SOURCES_BUCKET = "kb-sources";
+export const MAX_KB_BYTES = 100 * 1024 * 1024;
+
+/** Path no bucket kb-sources: {tenant_id}/{doc_id}.pdf */
+export function pathKb(tenantId: string, docId: string): string {
+  return `${tenantId}/${docId}.pdf`;
+}
