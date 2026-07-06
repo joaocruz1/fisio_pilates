@@ -1,11 +1,17 @@
-export default function Page() {
+import { MedidasSection } from "@/components/evolucao/medidas-section";
+import { listMeasurements } from "@/server/measurements";
+
+export default async function EvolucaoPage({ params }: { params: Promise<{ alunoId: string }> }) {
+  const { alunoId } = await params;
+  const medidas = await listMeasurements(alunoId);
+
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-2 p-8">
-      <h1 className="text-2xl font-semibold">Evolução</h1>
-      <p className="text-muted-foreground">Gráficos e relatórios de evolução gerados por IA.</p>
-      <p className="text-sm text-muted-foreground">
-        Em construção — ver planejamento em <code>docs/plan/</code>.
+    <div className="flex flex-col gap-6 p-4 md:p-6">
+      <MedidasSection studentId={alunoId} medidas={medidas} />
+      <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+        Gráficos de evolução (dor, frequência, carga e medidas) e os relatórios com IA chegam nas
+        próximas fases.
       </p>
-    </main>
+    </div>
   );
 }
