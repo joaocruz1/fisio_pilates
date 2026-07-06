@@ -17,8 +17,8 @@ const serverSchema = z.object({
 
   OPENROUTER_API_KEY: z.string().min(1),
   OPENROUTER_MODEL: z.string().default("anthropic/claude-sonnet-5"),
-  OPENROUTER_FALLBACK_MODEL: z.string().default("anthropic/claude-sonnet-4.6"),
-  OPENROUTER_SMALL_MODEL: z.string().default("anthropic/claude-haiku-4.5"),
+  OPENROUTER_MODEL_FALLBACK: z.string().default("anthropic/claude-sonnet-4.6"),
+  OPENROUTER_MODEL_CHEAP: z.string().default("anthropic/claude-haiku-4.5"),
 
   EMBEDDINGS_MODEL: z.string().default("openai/text-embedding-3-small"),
   EMBEDDINGS_DIM: z.coerce.number().int().positive().default(1536),

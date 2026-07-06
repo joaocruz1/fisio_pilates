@@ -1,126 +1,150 @@
-# RAG — Base de Conhecimento, Ingestão e Busca Híbrida
+# 03 — RAG: Ingestão, Retrieval Híbrido e Busca Web
 
 Parte do planejamento do FisioPilates — ver `00-visao-geral.md`.
 
-Este documento cobre o pipeline completo de RAG: ingestão de documentos → embeddings → armazenamento pgvector → retrieval híbrido → busca web complementar → consumo pelos dois casos de uso de IA (relatório de evolução e chat técnico). Schema completo e padrões de RLS estão em `02-banco-de-dados.md`; prompts, guardrails e custos de LLM em `04-ia.md`.
-
-**Stack:** Next.js 16 (App Router) na Vercel (Fluid Compute, região `gru1`), Supabase `sa-east-1` (Postgres + pgvector + Storage + Auth), OpenRouter (LLM e embeddings), Tavily (busca web), QStash (fila de ingestão).
+> Escopo: base de conhecimento técnico (KB) do produto — pipeline de ingestão de PDFs (upload → QStash → worker → chunking → embeddings → pgvector), busca híbrida vetor+FTS com RRF, escopo global vs. tenant, busca web complementar (Tavily) e como o retrieval alimenta os dois casos de uso de IA (relatório de evolução e chat). Schema/RLS detalhados em `02-banco-de-dados.md`; integração AI SDK/OpenRouter, prompts e custos de geração em `04-ia.md`; background jobs/infra em `06-infra-deploy.md`; golden set e testes em `09-testes-qualidade.md`.
+>
+> **Fronteira LGPD (regra de arquitetura, não convenção):** a KB é **conhecimento técnico** (livros, apostilas, protocolos). Documento de aluno (exame, foto postural, laudo) **nunca** entra em `kb_chunks` e não é vetorizado no MVP. O `extracted_text` desses documentos vive em `documents.extracted_text` e é injetado direto no prompt daquele aluno (ver `04-ia.md`). Misturar as duas coisas seria vazar dado de saúde para a base compartilhada.
 
 ---
 
-## 1. Decisões-chave (resumo executivo)
+## 1. Decisões-chave
 
 | Tema | Decisão | Justificativa curta |
 |---|---|---|
-| Extração de PDF | **`unpdf`** (runtime `nodejs`) | Serverless-first, zero dependências nativas — `pdf-parse` v1 depende de `pdfjs-dist`/`canvas`, que quebra na Vercel |
-| Chunking | Recursivo por estrutura, **500–800 tokens**, overlap 10–15%, cabeçalho contextual | Conteúdo técnico denso; chunks médios com contexto de seção maximizam recall sem diluir precisão |
-| Embeddings | **`openai/text-embedding-3-small` via `POST /v1/embeddings` do OpenRouter** (1536 dims), modelo/dimensão via env (`EMBEDDINGS_MODEL`, `EMBEDDINGS_DIM`) | Endpoint OpenAI-compatible → uma única chave/fatura; $0,02/1M tokens; bom em pt-BR; migrar para OpenAI direto = trocar 2 env vars |
-| Vetores | pgvector `vector(1536)` + **índice HNSW (cosine)** | HNSW ~3x mais rápido que IVFFlat, sem retreino ao crescer a base |
-| Busca | **Híbrida: vetor + FTS `portuguese` com RRF** em função SQL única (`match_kb_chunks`), SECURITY INVOKER + filtro explícito de tenant | Termos técnicos exatos (ex. "espondilolistese L5-S1") são melhor capturados por FTS; RRF combina sem tuning; RLS + filtro = defesa em profundidade |
-| Re-ranking | **Não no MVP** (deixar hook) | RRF híbrido já entrega qualidade suficiente; reranker adiciona vendor, custo e latência |
-| Escopo da KB | **Híbrido: base global (admin) + base por tenant**, mesma tabela com coluna `scope` + RLS via `private.user_tenant_ids()` | Isolamento garantido no banco, retrieval une os dois escopos em uma query |
-| Storage | **Bucket único `kb-sources`**, prefixo `global/` (admin) vs `{tenant_id}/` (profissional), privado, signed URLs curtas | Um bucket com policy por prefixo é menos superfície que dois |
-| Arquivos grandes | **QStash (Upstash)** disparando worker em API Route, **lotes de 50 páginas auto-encadeados e idempotentes** — único mecanismo de fila do produto | Fila HTTP sem infra, retries/DLQ nativos, free tier 1.000 msgs/dia; relatórios de IA são síncronos e NÃO passam por fila |
-| Busca web | **Tavily** (basic search, ~$0,008/busca; 1.000 créditos/mês grátis), allowlist de domínios de saúde, cache 7 dias | Feito para RAG (retorna conteúdo limpo pronto para prompt), mais barato e simples que Exa |
-| Modelo LLM | **`anthropic/claude-sonnet-5`** pinado via env `OPENROUTER_MODEL`; fallback `anthropic/claude-sonnet-4.6`; **orçar a preço cheio $3/$15 por MTok** | Nunca usar alias `latest` em produção; fallback automático via `models` no OpenRouter |
-| Modelo auxiliar | `anthropic/claude-haiku-4.5` | Multi-queries do relatório e tarefas baratas/rápidas |
-| Fronteira LGPD | `extracted_text` de documentos de aluno **nunca entra em `kb_chunks`** | KB é conhecimento técnico; dado de saúde de aluno vive em `documents` e é injetado direto no prompt do relatório daquele aluno |
+| Extração de PDF | **`unpdf`** (runtime `nodejs`) | Serverless-first, zero dependências nativas — `pdf-parse` v1 puxa `pdfjs-dist`/`canvas` (node-gyp/C++), que não compila na Vercel. Mesma lib usada na extração de documentos de aluno (Fase 4). |
+| Chunking | Recursivo por estrutura, **500–800 tokens**, overlap 10–15%, com cabeçalho contextual | Conteúdo técnico denso; chunks médios com contexto de seção maximizam recall sem diluir a precisão de termos clínicos. |
+| Embeddings | **`openai/text-embedding-3-small` via `POST /v1/embeddings` do OpenRouter** (1536 dims) | O OpenRouter expõe endpoint de embeddings OpenAI-compatível → **uma única chave/fatura** para LLM + embeddings; ~$0,02/1M tokens; bom em pt-BR. |
+| Vetores | pgvector `vector(1536)` + **índice HNSW (cosine)** | HNSW ~3x mais rápido que IVFFlat e sem retreino ao crescer a base documento a documento. |
+| Busca | **Híbrida: vetor + FTS `portuguese` com RRF** numa função SQL única (`match_kb_chunks`) | Termos técnicos exatos ("espondilolistese L5-S1") são melhor capturados por FTS; RRF combina os dois sem tuning. |
+| Re-ranking | **Não no MVP** (hook deixado no código) | O híbrido RRF sobre base curada já entrega qualidade suficiente; reranker adiciona vendor, custo e latência. |
+| Escopo da KB | **Base global (admin) + base por tenant**, mesma tabela, coluna `scope` + RLS | Isolamento no banco; o retrieval une os dois escopos numa única query. |
+| Arquivos grandes | **QStash** disparando worker em API Route, **lotes de 50 páginas auto-encadeados e idempotentes** | Fila HTTP sem infra, retries/DLQ nativos, free tier cobre o MVP. QStash é o **único** mecanismo de fila do produto — relatórios são síncronos (ver `04-ia.md`). |
+| Busca web | **Tavily** (basic, allowlist de domínios de saúde, cache 7 dias) | Feito para RAG (retorna conteúdo limpo pronto p/ prompt), mais barato que Exa, free tier cobre o MVP. |
+| Modelo LLM (consumidores do RAG) | **`anthropic/claude-sonnet-5`** pinado via env `OPENROUTER_MODEL` (fallback `anthropic/claude-sonnet-4.6`) | Contrato com `04-ia.md`; nunca usar alias `latest`. |
+| Modelo auxiliar | **`anthropic/claude-haiku-4.5`** | Multi-query (relatório) e reescrita de query (chat) — barato/rápido. |
+
+### 1.1 Variáveis de ambiente do RAG
+
+Validadas por zod em `lib/env.ts` (ver `06-infra-deploy.md`); nunca hardcodar dimensão ou modelo.
+
+```bash
+OPENROUTER_API_KEY=
+OPENROUTER_MODEL=anthropic/claude-sonnet-5          # LLM consumidor (contrato com 04-ia.md)
+EMBEDDINGS_MODEL=openai/text-embedding-3-small
+EMBEDDINGS_DIM=1536
+TAVILY_API_KEY=
+QSTASH_TOKEN=
+QSTASH_CURRENT_SIGNING_KEY=
+QSTASH_NEXT_SIGNING_KEY=
+# Worker de ingestão usa service role:
+NEXT_PUBLIC_SUPABASE_URL= / SUPABASE_SERVICE_ROLE_KEY=
+```
+
+O modelo auxiliar (Haiku) e o de fallback são resolvidos no `lib/ai/client.ts` a partir do mesmo provider — ver `04-ia.md`. Trocar de provedor de embeddings (OpenRouter → OpenAI direto) é mudar `baseURL` + key, pois o endpoint é OpenAI-compatível; trocar de **modelo** de embedding exige re-embeddar a base inteira (a dimensão da coluna trava o modelo) — por isso `EMBEDDINGS_MODEL`/`EMBEDDINGS_DIM` vêm de env e há coluna `embedding_model` em `kb_documents`.
 
 ---
 
-## 2. Pipeline de ingestão de documentos
+## 2. Pipeline de ingestão
 
 ### 2.1 Fluxo geral
 
 ```
-[UI] upload (signed URL) ──► Supabase Storage (bucket kb-sources, privado)
-        │                      global/...  ou  {tenant_id}/...
-        ▼
-POST /api/kb/documents  ──► insert kb_documents (status='queued')
+[UI /conhecimento]
+  criarUrlUpload (server action) ──► signed upload URL
         │
         ▼
-QStash.publishJSON ──► POST /api/jobs/ingest  (worker, assinatura verificada)
-        │                     │
-        │                     ├─ 1. baixa PDF do Storage (stream, service_role)
-        │                     ├─ 2. unpdf: extrai texto página a página (lote de 50 páginas)
-        │                     ├─ 3. chunking recursivo + cabeçalho contextual
-        │                     ├─ 4. embeddings em lotes de até 100 chunks/request (OpenRouter)
-        │                     ├─ 5. insert kb_chunks + update progresso
-        │                     └─ 6. restam páginas? → re-enfileira próximo lote
-        │                          senão → status='ready'
+  PUT direto do browser ──────────► Supabase Storage  (bucket kb-sources, prefixo global/ ou {tenant_id}/)
+        │                            (arquivo NUNCA passa pela função serverless — evita limite de 4,5 MB da Vercel)
         ▼
-kb_documents.status: queued → processing → ready | failed
+  confirmarUpload (server action) ─► INSERT kb_documents (status='queued')
+        │                            └─► qstash.publishJSON → POST /api/jobs/ingest { documentId, pageStart: 0 }
+        ▼
+POST /api/jobs/ingest  (worker; assinatura QStash verificada; runtime nodejs; maxDuration=300)
+        │
+        ├─ 1. baixa o PDF do Storage (service role, stream)
+        ├─ 2. delete-antes-de-inserir (idempotência) do lote atual
+        ├─ 3. unpdf: extrai texto das páginas [pageStart, pageStart+50)
+        ├─ 4. chunking recursivo 500–800 tokens + cabeçalho contextual
+        ├─ 5. embeddings em lote (≤100 chunks/request, OpenRouter)
+        ├─ 6. INSERT kb_chunks + UPDATE kb_documents.processed_pages
+        └─ 7. restam páginas? → qstash.publishJSON próximo lote (pageStart+50)
+                 senão → status='ready'
+        ▼
+kb_documents.status:  queued → processing → ready | failed
 ```
 
-- **Upload direto ao Storage via signed URL** — o arquivo nunca passa pela função serverless (evita o limite de body de 4,5 MB da Vercel). É o mesmo fluxo em 2 actions dos documentos de aluno (Fase 4): `criarUrlUpload` → PUT do browser → confirmação.
-- Bucket **`kb-sources`** privado: prefixo `global/` só é gravável/legível pelo backend (service_role); prefixo `{tenant_id}/` tem policies de Storage por prefixo (a profissional grava e lê apenas o próprio prefixo — inclusive para o botão "baixar meu material"). O conteúdo da base global chega à usuária via chunks, nunca via arquivo.
-- A UI (`/conhecimento`) mostra progresso lendo `kb_documents.processed_pages / total_pages` (polling ou Supabase Realtime), com estados Processando / Pronto / Erro.
-- No upload, a UI exibe o aviso legal "envie apenas materiais que você possui legalmente" e permite registrar `license_note`.
+Estados observados pela UI via polling de `processed_pages / total_pages` (barra de progresso "Processando").
 
-### 2.2 Fila e worker — QStash com lotes auto-encadeados
+### 2.2 Upload por signed URL
 
-**Limites relevantes (verificados):**
+Mesmo fluxo de duas actions dos documentos de aluno (Fase 4) — reaproveitado aqui:
 
-| Plataforma | Limite |
-|---|---|
-| Vercel Functions (Fluid Compute, plano Pro) | até 800s GA; o worker usa `maxDuration = 300` com folga enorme por lote |
-| `waitUntil` / `after()` | roda pós-response, mas dentro do mesmo `maxDuration`, sem retry, sem observabilidade |
-| Supabase Edge Functions | 400s wall clock e ~200ms de CPU ativa — inviável para parsing de PDF (CPU-bound) |
-| QStash | free 1.000 msgs/dia; $1/100k depois; retries exponenciais (3x) + DLQ + assinatura |
+1. **`criarUrlUpload`** — valida tipo (PDF) e tamanho, resolve o prefixo do bucket a partir do escopo (`global/` só para admin; `{tenant_id}/` para o tenant, com `tenant_id` vindo da sessão, **nunca do form**), gera uma signed upload URL curta.
+2. **PUT direto do browser** para o Storage, com barra de progresso (o arquivo não trafega pela serverless).
+3. **`confirmarUpload`** — grava a linha em `kb_documents` (`status='queued'`, `storage_path`, `title`, `license_note`), e publica a primeira mensagem no QStash.
 
-Um livro de 300 páginas = parsing + ~250–400 chamadas de embedding em lote + ~2–4k inserts. Poderia caber numa única invocação longa, mas **não confiamos nisso** (PDFs pesados, rate limit de embeddings, cold start). Alternativas descartadas:
+Bucket `kb-sources` é **privado**; policies por prefixo em `storage.objects` (detalhe em `02-banco-de-dados.md`). O conteúdo chega ao usuário via **chunks**, não via download do arquivo — exceto o botão "baixar meu material" do próprio dono (signed URL curta).
 
-- **`after()`/`waitUntil` sozinho:** sem retry, sem fila, morre junto com o `maxDuration`, invisível quando falha. Ter dois caminhos de código (pequeno vs grande) para o mesmo pipeline é complexidade gratuita.
-- **Supabase Edge Functions:** os 200ms de CPU ativa matam parsing + chunking.
-- **Trigger.dev:** excelente para workflows longos, mas é mais uma plataforma para conta/deploy/observabilidade — overkill para um único job de ingestão num MVP de 1 dev.
-- **QStash:** é só HTTP — publica mensagem, o QStash chama de volta a API Route com retry e DLQ; verificação por assinatura (`@upstash/qstash`, `verifySignatureAppRouter`); zero infra nova; free tier cobre o MVP inteiro. O worker continua sendo código Next.js normal, deployado junto. **É o único uso de fila no produto** — relatórios de IA são síncronos (ver `04-ia.md`).
+### 2.3 Extração de texto — `unpdf`
 
-**Padrão de lotes auto-encadeados** (mantém cada invocação bem abaixo do limite):
+- Roda em API Route com `export const runtime = 'nodejs'` (não `edge`). Zero dependências nativas — funciona na Vercel out of the box.
+- Extrair **por página** (`extractText(pdf, { mergePages: false })`): preserva o número da página como metadado (citação "p. 42") e permite o processamento em lotes.
+- **PDF escaneado (imagem, sem camada de texto):** fora do MVP. Detectar (texto extraído ~vazio no lote) → `status='failed'` + `error_message` em pt-BR: *"Este PDF parece ser escaneado; envie um PDF com texto selecionável."* Porta aberta: OCR em fase futura.
+- Formato aceito no MVP: **PDF**. DOCX/EPUB ficam para depois.
+
+### 2.4 Chunking — estratégia para conteúdo técnico
+
+Conteúdo típico: livros/apostilas com hierarquia forte (capítulo → seção → parágrafo), terminologia anatômica precisa, listas de exercícios, contraindicações.
+
+1. **Split recursivo por estrutura** — ordem de separadores: quebras de seção/título → `\n\n` (parágrafo) → `\n` → sentença → caractere. Preferir uma **função própria (~80 linhas)** a arrastar `@langchain/textsplitters` inteiro.
+2. **Tamanho alvo 500–800 tokens** (~2.000–3.200 caracteres), máximo rígido 1.000 tokens. Menores fragmentam protocolos de exercício; maiores diluem a similaridade de termos clínicos.
+3. **Overlap 10–15%** (~80–100 tokens) para não cortar contraindicações/indicações no meio.
+4. **Cabeçalho contextual** (barato e eficaz): prefixar cada chunk **antes de embeddar** com `"{título do documento} — {seção/capítulo} (p. {página})\n\n"`. É a versão simples do "contextual retrieval" e eleva muito o recall em livros longos onde o chunk isolado não menciona o assunto do capítulo. Guardado em `context_header` e concatenado ao `content` também no `fts` e no vetor.
+5. Guardar `token_count` (estimado via `js-tiktoken` ou heurística `chars/4`) para orçar o contexto do prompt.
+
+### 2.5 Embeddings
+
+- **`openai/text-embedding-3-small`**, 1536 dims, ~$0,02/1M tokens; boa qualidade em português técnico; dimensão amigável ao HNSW.
+- **Provedor OpenRouter**, endpoint `POST https://openrouter.ai/api/v1/embeddings` (OpenAI-compatível) → **uma única chave** para LLM + embeddings.
+- **Batching:** até **100 chunks por request** (o endpoint aceita array); normalizar o texto (trim, colapsar espaços) antes de enviar.
+- O vetor é `embed(context_header + "\n\n" + content)` — o cabeçalho entra no embedding, não só no texto exibido.
+- Descartados no MVP: `text-embedding-3-large` (6,5x o custo p/ ganho marginal no domínio) e multilíngues dedicados (Cohere/Voyage — vendor sem necessidade comprovada). Reavaliar só se o retrieval em pt-BR decepcionar no golden set (§8).
+
+### 2.6 Background: QStash + lotes auto-encadeados
+
+QStash é o mecanismo de fila **único** do produto (relatórios são síncronos — ver `04-ia.md`), por motivos práticos que descartam as alternativas:
+
+- **`after()`/`waitUntil` sozinho:** sem retry, sem fila, morre junto com o `maxDuration`, invisível quando falha. Ter dois code paths para o mesmo pipeline é complexidade gratuita. Descartado como mecanismo principal.
+- **Supabase Edge Functions:** ~200ms de CPU ativa não cobrem parsing de PDF + chunking (CPU-bound). Descartado.
+- **Trigger.dev:** ótimo, mas é mais uma plataforma (conta/deploy/observabilidade) — overkill para um único job num MVP tocado por 1 dev.
+- **QStash:** é só HTTP — publica a mensagem, o QStash chama de volta a API Route com retry exponencial e DLQ; assinatura verificada por `@upstash/qstash` (`verifySignatureAppRouter`); zero infra nova; free tier de 1.000 msgs/dia cobre o MVP.
+
+**Padrão de lotes** (mantém cada invocação muito abaixo do limite):
 
 ```
-POST /api/jobs/ingest  { documentId, pageStart: 0 }
+POST /api/jobs/ingest  { documentId, pageStart }
   ├─ processa páginas [pageStart, pageStart+50)
-  ├─ update kb_documents.processed_pages
+  ├─ UPDATE kb_documents.processed_pages
   ├─ se pageStart+50 < total_pages:
   │     qstash.publishJSON({ documentId, pageStart: pageStart+50 })
   └─ senão: status = 'ready'
 ```
 
-- `export const runtime = 'nodejs'` e `export const maxDuration = 300` no route do worker.
-- **Idempotência (delete-antes-de-inserir):** antes de processar um lote, `delete from kb_chunks where document_id = :id and page_start >= :pageStart and page_start < :pageStart + 50`. Assim, um retry do QStash **nunca duplica chunks**.
-- Falha após os retries → mensagem vai para a DLQ do QStash + `status='failed'` com `error_message` legível em pt-BR para a UI.
-- Documentos pequenos passam pelo mesmo caminho (1 lote) — **um único code path**.
-- Escrita em `kb_chunks` é exclusiva do worker (client `service_role`); por isso não existe policy de escrita para usuários (ver §4).
+- `export const maxDuration = 300` no route do worker (margem enorme para 50 páginas).
+- **Idempotência (delete-antes-de-inserir):** antes de inserir o lote, `delete from kb_chunks where document_id = :documentId and page_start >= :pageStart and page_start < :pageStart + 50`. Um retry do QStash reprocessa o lote e **nunca duplica chunks**.
+- Falha após todos os retries → DLQ do QStash + `status='failed'` com `error_message` legível na UI.
+- Documento pequeno passa pelo **mesmo caminho** (1 lote) — um único code path.
 
-### 2.3 Extração de texto — `unpdf`
-
-- **`unpdf`** rodando em API Route com runtime `nodejs` (não `edge`). Motivo: zero dependências nativas — funciona na Vercel out of the box. O `pdf-parse` clássico (v1) puxa `pdfjs-dist` com dependência opcional de `canvas` (node-gyp/C++), que a Vercel não compila.
-- Extrair **por página** (`extractText(pdf, { mergePages: false })`) — preserva o número da página como metadado (citação "p. 42") e permite o processamento em lotes de páginas.
-- **PDFs escaneados (imagem, sem camada de texto):** fora do MVP. Detectar (texto extraído ~vazio) e marcar `status='failed'` com mensagem clara em pt-BR ("Este PDF parece ser escaneado; envie um PDF com texto selecionável"). Porta aberta: fase futura com OCR.
-- Formatos aceitos no MVP: PDF. (DOCX/EPUB: fase futura via `mammoth`/conversão.)
-
-### 2.4 Chunking — estratégia para conteúdo técnico de fisioterapia
-
-Conteúdo típico: livros/apostilas com hierarquia forte (capítulo → seção → parágrafo), terminologia anatômica precisa, listas de exercícios, contraindicações. Estratégia:
-
-1. **Split recursivo por estrutura** (ordem de separadores): quebras de seção/título detectadas → `\n\n` (parágrafo) → `\n` → sentença → caractere. Implementação: função própria de ~80 linhas (preferível a arrastar `@langchain/textsplitters` inteiro por um splitter).
-2. **Tamanho alvo: 500–800 tokens** (~2.000–3.200 caracteres), máximo rígido 1.000 tokens. Chunks menores fragmentam protocolos de exercício; maiores diluem a similaridade de termos clínicos específicos.
-3. **Overlap de 10–15%** (~80–100 tokens) para não cortar contraindicações/indicações no meio.
-4. **Cabeçalho contextual (barato e eficaz):** prefixar cada chunk, *antes de embeddar*, com `"{título do documento} — {seção/capítulo} (p. {página})\n\n"`. É a versão simples do "contextual retrieval" e melhora muito o recall em livros longos onde o chunk isolado não menciona o assunto do capítulo. O cabeçalho é armazenado separado (`context_header`) — o `content` guarda só o texto do chunk.
-5. Guardar `token_count` (estimado via `js-tiktoken` ou heurística chars/4) para montar orçamento de contexto no prompt.
-
-### 2.5 Embeddings — modelo e provedor
-
-- **Modelo: `openai/text-embedding-3-small`** — 1536 dimensões, $0,02/1M tokens; qualidade sólida em português para domínio técnico; dimensão amigável a pgvector/HNSW.
-- **Provedor: OpenRouter**, via endpoint OpenAI-compatible `POST https://openrouter.ai/api/v1/embeddings` (há também `GET /v1/embeddings/models`). Uma única API key para LLM + embeddings, uma única fatura. O client é o SDK OpenAI-compatible apontando `baseURL` e key para o OpenRouter via env.
-- **Plano B (mudança de 2 env vars):** como o endpoint é OpenAI-compatible, migrar para OpenAI direto é trocar `baseURL` + key. Modelo e dimensão são lidos de env (`EMBEDDINGS_MODEL`, `EMBEDDINGS_DIM`) — **nunca hardcodar 1536** no código de aplicação. Atenção: a dimensão da coluna `vector(1536)` trava o modelo; trocar de modelo exige re-embedding da base inteira (por isso `kb_documents.embedding_model` registra com qual modelo cada documento foi vetorizado, e a decisão fica travada antes da migration de `kb_chunks`).
-- **Batching:** enviar até 100 chunks por request (o endpoint aceita array) — reduz round-trips e latência. Normalizar o texto (trim, colapsar espaços) antes.
-- O texto embeddado é `context_header + content`.
-- Alternativa avaliada e descartada no MVP: `text-embedding-3-large` ($0,13/1M, 3072 dims) — ganho marginal para o domínio não justifica 6,5x o custo + índice maior. Multilíngues dedicados (Cohere, Voyage) adicionam vendor sem necessidade comprovada; reavaliar se o retrieval em pt-BR decepcionar no golden set (§9).
+Um livro de 300 páginas = parsing + ~250–400 chamadas de embedding em lote + ~2–4k inserts, dividido em ~6 lotes de 50 páginas, cada um bem abaixo dos 300s. O produto roda em Vercel Pro (ver `06-infra-deploy.md`), que entrega `maxDuration` folgado; ainda assim os lotes garantem que nenhuma invocação chegue perto do teto.
 
 ---
 
-## 3. Schema pgvector
+## 3. Schema pgvector e busca híbrida
+
+Schema resumido aqui para contexto do retrieval; a versão canônica com todas as policies vive em `02-banco-de-dados.md`. PK dos chunks é `bigint identity`; `fts` é coluna gerada `tsvector`.
+
+### 3.1 Tabelas e índices
 
 ```sql
 create extension if not exists vector;
@@ -128,23 +152,23 @@ create extension if not exists vector;
 -- Documento-fonte (1 linha por arquivo ingerido)
 create table kb_documents (
   id              uuid primary key default gen_random_uuid(),
-  tenant_id       uuid references tenants(id),        -- NULL = base global
+  tenant_id       uuid references tenants(id),          -- NULL = base global
   scope           text not null check (scope in ('global','tenant')),
   title           text not null,
-  storage_path    text not null,                      -- caminho no bucket kb-sources
+  storage_path    text not null,                        -- caminho no bucket kb-sources
   source_type     text not null default 'pdf',
+  license_note    text,                                 -- "material que possuo legalmente"
+  embedding_model text,                                 -- modelo usado (destrava troca futura); ver versão canônica em 02-banco-de-dados.md
   status          text not null default 'queued'
                   check (status in ('queued','processing','ready','failed')),
   total_pages     int,
   processed_pages int not null default 0,
   error_message   text,
-  embedding_model text not null default 'openai/text-embedding-3-small',
-  license_note    text,                               -- declaração de posse legal do material
-  created_by      uuid not null,                      -- auth.uid() de quem subiu
+  created_by      uuid not null,                        -- auth.uid() de quem subiu
   created_at      timestamptz not null default now(),
   constraint scope_tenant check (
     (scope = 'global' and tenant_id is null) or
-    (scope = 'tenant' and tenant_id is not null)
+    (scope = 'tenant'  and tenant_id is not null)
   )
 );
 
@@ -152,14 +176,14 @@ create table kb_documents (
 create table kb_chunks (
   id             bigint generated always as identity primary key,
   document_id    uuid not null references kb_documents(id) on delete cascade,
-  tenant_id      uuid,                                -- desnormalizado p/ filtro rápido; NULL = global
+  tenant_id      uuid,                                  -- desnormalizado p/ filtro rápido; NULL = global
   scope          text not null,
-  content        text not null,                       -- texto do chunk (sem o cabeçalho contextual)
-  context_header text,                                -- "Livro X — Cap. Y (p. Z)"
+  content        text not null,                         -- texto do chunk (sem o cabeçalho)
+  context_header text,                                  -- "Livro X — Cap. Y (p. Z)"
   page_start     int,
   page_end       int,
   token_count    int,
-  embedding      vector(1536) not null,               -- embed(context_header + content)
+  embedding      vector(1536) not null,                 -- embed(context_header + content)
   fts            tsvector generated always as
                    (to_tsvector('portuguese',
                       coalesce(context_header,'') || ' ' || content)) stored,
@@ -168,66 +192,18 @@ create table kb_chunks (
 
 -- Índices
 create index kb_chunks_embedding_idx on kb_chunks
-  using hnsw (embedding vector_cosine_ops);           -- m=16, ef_construction=64 (defaults)
-create index kb_chunks_fts_idx on kb_chunks using gin (fts);
+  using hnsw (embedding vector_cosine_ops);             -- m=16, ef_construction=64 (defaults)
+create index kb_chunks_fts_idx    on kb_chunks using gin (fts);
 create index kb_chunks_tenant_idx on kb_chunks (tenant_id, scope);
 ```
 
-Notas:
+**Índice vetorial — HNSW (não IVFFlat):** `vector_cosine_ops`, defaults `m=16`, `ef_construction=64`. ~3x mais rápido que IVFFlat com recall melhor e — decisivo aqui — **não depende da distribuição dos dados no build**: a base começa vazia e cresce documento a documento; IVFFlat exigiria rebuild periódico dos centróides. Query-time: `set local hnsw.ef_search = 40` dentro da função se precisar de mais recall (40 já é bom).
 
-- A exclusão de um documento na UI remove os chunks em cascata (`on delete cascade`); o arquivo no Storage é removido pela mesma action.
-- Compute do Supabase: o plano base aguenta dezenas de milhares de chunks 1536-d com HNSW tranquilamente; monitorar RAM se a base global passar de ~500k chunks (aí considerar `halfvec`).
+**Compute:** o plano base do Supabase (sa-east-1) aguenta dezenas de milhares de chunks 1536-d com HNSW tranquilamente. Monitorar RAM se a base global passar de ~500k chunks — aí avaliar `halfvec(1536)` + upgrade de compute.
 
-### Índice vetorial: HNSW (não IVFFlat)
+### 3.2 Função `match_kb_chunks` (busca híbrida RRF — SQL completo)
 
-- **HNSW com `vector_cosine_ops`**, parâmetros default (`m=16`, `ef_construction=64`).
-- Justificativa: ~3x mais rápido que IVFFlat com recall melhor, e — decisivo aqui — **não depende da distribuição dos dados no build**: a base começa vazia e cresce documento a documento; IVFFlat exigiria rebuild periódico dos centróides.
-- Query-time: `set local hnsw.ef_search = 40;` dentro da função se precisar de mais recall (default 40 já é bom).
-
----
-
-## 4. Escopo do conhecimento: global (admin) vs tenant
-
-**Mesma tabela, dois escopos, isolamento por RLS.**
-
-- `scope='global'` / `tenant_id IS NULL`: base curada pelo admin da plataforma (livros/apostilas com direito de uso, ingeridos via script admin com `service_role`). Visível a todos os tenants (somente leitura).
-- `scope='tenant'` / `tenant_id=<uuid>`: materiais que cada profissional sobe. Visíveis **apenas** ao próprio tenant.
-- O retrieval une os dois num único `where scope='global' or tenant_id = :tenant` (já embutido na função SQL, §5).
-- **Não fechar portas:** `tenant_id` como FK está preparado para virar "estúdio/time" depois sem mudar o modelo de dados do RAG.
-
-RLS — usa o helper padrão do projeto `private.user_tenant_ids()` (setof uuid; já suporta o futuro 1-usuária-N-tenants):
-
-```sql
-alter table kb_documents enable row level security;
-alter table kb_chunks enable row level security;
-
-create policy kb_documents_select on kb_documents for select
-  using (scope = 'global' or tenant_id in (select private.user_tenant_ids()));
-
-create policy kb_documents_insert on kb_documents for insert
-  with check (scope = 'tenant' and tenant_id in (select private.user_tenant_ids()));
-  -- scope='global' só via admin (service_role)
-
-create policy kb_documents_delete on kb_documents for delete
-  using (scope = 'tenant' and tenant_id in (select private.user_tenant_ids()));
-
-create policy kb_chunks_select on kb_chunks for select
-  using (scope = 'global' or tenant_id in (select private.user_tenant_ids()));
--- INSERT/UPDATE/DELETE de kb_chunks: apenas service_role (worker de ingestão);
--- sem policy de escrita para usuários.
-```
-
-### Fronteira LGPD (regra de arquitetura)
-
-A KB é **conhecimento técnico**, nunca dado de saúde de aluno. Documentos de aluno (exames, fotos posturais, laudos) vivem em outro bucket/tabela (`student-documents` / `documents`), **não entram em `kb_chunks`** e não são vetorizados no MVP. O texto extraído deles (mesmo pipeline `unpdf`, campo `documents.extracted_text`, extração no upload) é injetado **diretamente** no prompt da análise daquele aluno (§7.1) — sob a RLS de `documents`, dentro do tenant.
-
-Se no futuro um aluno acumular documentos demais para caber em contexto, criar tabela separada `student_doc_chunks` (tenant_id + student_id, RLS estrita) — decisão adiada de propósito e registrada no backlog pós-MVP.
-
----
-
-## 5. Retrieval — busca híbrida (vetor + FTS português) com RRF
-
-Termos clínicos exatos ("manobra de McKenzie", nomes de exercícios, "L5-S1") são onde a busca puramente semântica falha. FTS com config **`'portuguese'`** (stemming pt) + fusão por **Reciprocal Rank Fusion**, tudo numa única função SQL:
+FTS com config **`portuguese`** (stemming pt) + fusão por **Reciprocal Rank Fusion**. `security invoker` + filtro explícito de tenant (defesa em profundidade: a RLS das tabelas continua valendo mesmo com o filtro `p_tenant_id`).
 
 ```sql
 create or replace function match_kb_chunks(
@@ -245,20 +221,23 @@ returns table (
 )
 language sql stable
 security invoker
+set search_path = public
 as $$
 with scoped as (
   select * from kb_chunks
   where scope = 'global' or tenant_id = p_tenant_id
 ),
 semantic as (
-  select id, row_number() over (order by embedding <=> query_embedding) as rank,
+  select id,
+         row_number() over (order by embedding <=> query_embedding) as rank,
          1 - (embedding <=> query_embedding) as similarity
   from scoped
   order by embedding <=> query_embedding
   limit least(match_count * 4, 40)
 ),
 keyword as (
-  select id, row_number() over
+  select id,
+         row_number() over
            (order by ts_rank_cd(fts, websearch_to_tsquery('portuguese', query_text)) desc) as rank
   from scoped
   where fts @@ websearch_to_tsquery('portuguese', query_text)
@@ -278,62 +257,72 @@ $$;
 
 Notas de implementação:
 
-- Chamada sempre **do servidor** (route handler / Server Action) com o client Supabase do usuário autenticado. A função é `stable` + **SECURITY INVOKER** — a RLS das tabelas continua valendo por baixo do filtro explícito `p_tenant_id` (**defesa em profundidade**: mesmo um bug no parâmetro não vaza chunk de outro tenant).
-- `websearch_to_tsquery` tolera input livre do usuário (aspas, "-" etc.) sem injeção de tsquery.
-- Retornar `similarity` separado do `rrf_score`: a similaridade coseno é o sinal usado no gatilho de fallback web (§6.2).
-- Toda a camada de retrieval é encapsulada em `src/lib/ai/rag.ts` — `ragSearch(query, { tenantId, k })` embedda a query (OpenRouter), chama `match_kb_chunks` e aplica o fallback Tavily. Relatório e chat consomem **este módulo único** (testável via script/endpoint interno antes de existir UI de chat).
+- Chamada **sempre do servidor** (route handler / server action) com o client Supabase do usuário autenticado — como a função é `stable`/invoker, a RLS das tabelas segue valendo além do filtro `p_tenant_id`.
+- `websearch_to_tsquery` tolera input livre do usuário (aspas, `-` etc.) sem risco de tsquery injection.
+- `similarity` é retornado **separado** do `rrf_score` porque a similaridade coseno do top-1 é o sinal do gatilho de fallback web (§5).
+- O corte interno de `match_count * 4` candidatos (antes do `limit match_count`) é o **hook do reranker** (§3.3).
 
-### Re-ranking: não no MVP
+### 3.3 Re-ranking — não no MVP, hook deixado
 
-- Rerankers (Cohere Rerank ~$2/1k buscas, Voyage rerank) adicionam um vendor, ~150–400ms de latência e pouco ganho quando o híbrido RRF já roda sobre uma base curada e pequena/média.
-- **Hook deixado pronto:** a camada de retrieval já produz candidatos (k×4) internamente antes do corte final — inserir um reranker ali no futuro é trocar `order by rrf_score` por uma chamada externa. Documentado como melhoria pós-MVP (plano C do risco de qualidade em pt-BR).
+Rerankers (Cohere Rerank ~$2/1k, Voyage) adicionam vendor, ~150–400ms de latência e pouco ganho quando o híbrido RRF roda sobre base curada pequena/média. A função já materializa `k×4` candidatos antes do corte final — inserir um reranker no futuro é trocar `order by rrf_score` por uma chamada externa sobre esses candidatos. Documentado como melhoria pós-MVP.
 
 ---
 
-## 6. Busca web em tempo real (fallback/complemento) — Tavily
+## 4. Escopo do conhecimento: global vs. tenant
 
-### 6.1 Provedor
+**Mesma tabela, dois escopos, isolamento por RLS.**
 
-| | Tavily | Exa |
-|---|---|---|
-| Preço | 1 crédito/busca basic ≈ **$0,008** PAYG; **1.000 créditos/mês grátis**; planos a partir de $30/mês (10k créditos ⇒ $0,003/busca) | $7/1k buscas (subiu de $5 em mar/2026), 1k/mês grátis |
-| Fit | Projetado para RAG: retorna snippets limpos prontos para prompt, `include_domains`, `search_depth` | Busca neural excelente, mas orientada a descoberta/conteúdo em inglês |
+- `scope='global'` / `tenant_id IS NULL`: base curada pelo admin da plataforma (livros/apostilas com direito de uso). **Somente leitura**, visível a todos os tenants.
+- `scope='tenant'` / `tenant_id=<uuid>`: materiais que cada profissional sobe — visíveis **apenas** ao próprio tenant.
+- O retrieval une os dois num único `where scope='global' or tenant_id = :tenant` (já embutido em `match_kb_chunks`).
 
-Tavily ganha por preço efetivo, free tier suficiente para o MVP inteiro e resposta já formatada para consumo por LLM.
+RLS (esqueleto; usa o helper `private.user_tenant_ids()` que retorna `setof uuid` — mesmo padrão de todas as tabelas, ver `02-banco-de-dados.md`):
 
-### 6.2 Quando acionar (gatilhos de fallback)
+```sql
+alter table kb_chunks enable row level security;
+create policy kb_chunks_select on kb_chunks for select
+  using (scope = 'global' or tenant_id in (select private.user_tenant_ids()));
+-- INSERT/DELETE de chunks: só service role (worker de ingestão). Sem policy de escrita para usuários.
 
-Sempre rodar o retrieval local primeiro; chamar Tavily somente se:
+alter table kb_documents enable row level security;
+create policy kb_documents_select on kb_documents for select
+  using (scope = 'global' or tenant_id in (select private.user_tenant_ids()));
+create policy kb_documents_insert on kb_documents for insert
+  with check (scope = 'tenant' and tenant_id in (select private.user_tenant_ids()));
+-- scope='global' só via admin (service role).
+```
+
+- **Storage:** bucket único `kb-sources` com policy por prefixo — `global/` legível só pelo backend; `{tenant_id}/` só pelo dono. Conteúdo chega ao usuário via chunks, não via arquivo.
+- **Escrita de chunks só service role:** o worker `/api/jobs/ingest` usa o client admin. Ingestão da base global é feita por um **script admin** (service role) com os 2–3 materiais seed.
+- `tenant_id` como FK já comporta virar "estúdio/time" depois, sem migração destrutiva do modelo de RAG.
+
+**Fronteira LGPD (repetida por ser crítica):** documento de aluno **não entra em `kb_chunks`** e não é vetorizado no MVP. Seu `extracted_text` (mesmo pipeline `unpdf`, campo `documents.extracted_text`) é injetado direto no prompt da análise **daquele** aluno (ver `04-ia.md`). Se no futuro um aluno acumular documentos demais para caber em contexto, cria-se tabela separada `student_doc_chunks` (`tenant_id` + `student_id`, RLS estrita) — decisão adiada de propósito.
+
+---
+
+## 5. Busca web complementar (Tavily)
+
+Provedor **Tavily**: projetado para RAG (retorna snippets limpos prontos p/ prompt), ~$0,008/busca basic, 1.000 créditos/mês grátis (cobrem o MVP inteiro), suporta `include_domains`. Descartada a Exa ($7/1k, orientada a descoberta em inglês).
+
+### 5.1 Gatilho de fallback
+
+Rodar **sempre o retrieval local primeiro**; chamar Tavily **somente** se:
 
 1. `top-1 similarity < 0.50` **ou** menos de 3 chunks com `similarity > 0.35` (base local não cobre o assunto); **ou**
 2. a pergunta pede informação claramente atual ("estudos recentes", "diretriz 2026"); **ou**
 3. a profissional ativa o toggle "buscar também na web" (transparência de UX).
 
-Parâmetros: `search_depth: 'basic'`, `max_results: 5`, `include_domains` com allowlist de fontes confiáveis de saúde — `scielo.br`, `pubmed.ncbi.nlm.nih.gov`, `pedro.org.au`, `bvsalud.org` — expansível por config.
+Parâmetros: `search_depth: 'basic'`, `max_results: 5`, `include_domains` com **allowlist** de fontes confiáveis de saúde — `scielo.br`, `pubmed.ncbi.nlm.nih.gov`, `pedro.org.au`, `bvsalud.org` — expansível por config.
 
-### 6.3 Cache (7 dias)
+### 5.2 Cache de 7 dias
 
-Cachear o resultado por query normalizada para poupar créditos — tabela `web_search_cache`, TTL de 7 dias na leitura:
+Resultado cacheado por **query normalizada** em `web_search_cache` (TTL 7 dias) para poupar créditos. Lookup por hash da query normalizada antes de qualquer chamada à Tavily.
 
-```sql
-create table web_search_cache (
-  query_hash text primary key,          -- sha256 da query normalizada (lowercase, trim)
-  query      text not null,
-  results    jsonb not null,            -- resposta da Tavily pronta para prompt
-  created_at timestamptz not null default now()
-);
-alter table web_search_cache enable row level security;
--- sem policies: acesso apenas server-side (service_role). O cache é global e
--- seguro de compartilhar entre tenants porque a query só contém termos técnicos.
-```
+### 5.3 Regra LGPD da query (regra de código)
 
-Leitura ignora linhas com `created_at < now() - interval '7 days'`; limpeza oportunista no próprio acesso (ou job periódico simples).
+A query enviada à Tavily é construída **apenas com termos técnicos** (patologia, exercício, objetivo) — **nunca** nome, idade, CPF, contato ou qualquer identificador do aluno. Isso é implementado num **builder de query separado**, não deixado a convenção. É a mesma fronteira do §4: dado de saúde identificável não sai do banco para um terceiro.
 
-### 6.4 Regra LGPD da query
-
-A query enviada à Tavily é construída **apenas com termos técnicos** (patologia, exercício, objetivo) — **nunca** nome, idade ou qualquer identificador do aluno. Isso é **regra de código** (builder de query separado e testável), não convenção. É também o que torna o cache global do §6.3 seguro.
-
-### 6.5 Combinação no prompt
+### 5.4 Combinação no prompt
 
 ```
 <contexto_kb>
@@ -351,130 +340,87 @@ cite as fontes usadas como [KB-n]/[WEB-n]; se nenhuma fonte cobrir a pergunta,
 diga explicitamente que não encontrou base e NÃO invente conduta clínica.
 ```
 
-A UI renderiza as citações `[KB-n]` como chips clicáveis (abre o trecho/documento) e `[WEB-n]` com link externo — importante para a confiança de um público não técnico.
+A UI renderiza `[KB-n]` como chips clicáveis (abrem o trecho/documento) e `[WEB-n]` com link externo — essencial para a confiança de um público não técnico.
 
 ---
 
-## 7. Como o RAG alimenta os dois casos de uso
+## 6. Como o RAG alimenta os dois casos de uso de IA
 
-Modelo em ambos: **`anthropic/claude-sonnet-5`** via OpenRouter (pinado em `OPENROUTER_MODEL`; fallback `anthropic/claude-sonnet-4.6` configurado no client), consumido com **AI SDK v6** (`ai` ^6) + `@openrouter/ai-sdk-provider` ^2. Detalhes de prompts, guardrails, quota e cache em `04-ia.md`.
+Módulo central `lib/ai/rag.ts` expõe `ragSearch(query, { tenantId, k })`: gera o embedding da query (OpenRouter), chama `match_kb_chunks`, avalia o gatilho de fallback (§5.1), e — se disparar — consulta a Tavily (com cache) e devolve `{ kbChunks, webResults }` já normalizados para o prompt. Detalhes de prompts, schema do relatório e geração ficam em `04-ia.md`; aqui está só o que o RAG entrega.
 
-### 7.1 (a) Relatório de evolução do aluno
+### 6.1 Relatório de evolução do aluno (Fase 6)
 
-Execução **síncrona** sob demanda (botão "Gerar análise"), em `POST /api/ai/analyses` com `maxDuration = 300` — sem fila (QStash é exclusivo da ingestão). Papel do RAG no dossiê:
+Job sob demanda ("Gerar análise com IA"), server-side, síncrono (`generateObject`, sem streaming, sem fila):
 
-1. **Coleta estruturada (sem RAG):** ficha de avaliação + anamnese, últimas N sessões (exercícios, cargas, observações), medidas/reavaliações, e `documents.extracted_text` dos documentos do aluno relevantes (selecionados pela profissional ou os M mais recentes) — injetados direto no prompt, **pseudonimizados**, nunca via `kb_chunks` (§4).
-2. **Multi-query:** `claude-haiku-4.5` gera 3–5 queries de busca a partir do quadro do aluno (ex.: "progressão de carga pilates hérnia discal lombar", "contraindicações extensão torácica osteoporose"). As queries usam só termos técnicos — mesma regra LGPD do §6.4.
-3. **Retrieval:** `ragSearch` por query (k=6), dedupe por `id`, corte por orçamento de ~10–12 chunks (~8k tokens). Fallback web (§6.2) por query, se disparar.
-4. **Geração:** prompt = dados estruturados + contexto RAG (template §6.5) + instruções; saída **estruturada** via `generateObject` + Zod, com seções fixas (*Evolução no Pilates*, *Evolução corporal/postural*, *Pontos de atenção*, *Sugestões de progressão*, *Fontes consultadas*). Persistida em `ai_reports` (`structured jsonb`, com citações) para histórico/auditoria e cache por `input_hash`.
-5. Guardar também `model`, `prompt_version` e os **ids dos chunks usados** (rastreabilidade — relevante para LGPD e para depurar qualidade de retrieval).
+1. **Coleta estruturada (sem RAG):** avaliação + anamnese, condições, últimas N sessões (exercícios, cargas, dor pré/pós, observações), medidas/reavaliações, e o `extracted_text` dos documentos daquele aluno. Tudo **pseudonimizado** (sem nome/CPF/contato) antes de ir ao prompt.
+2. **Multi-query:** `claude-haiku-4.5` gera 3–5 queries a partir do quadro do aluno (ex.: "progressão de carga pilates hérnia discal lombar", "contraindicações extensão torácica osteoporose").
+3. **Retrieval:** `ragSearch` por query (k=6), dedupe por `id`, corte por orçamento de ~10–12 chunks (~8k tokens). Fallback web por query, se o gatilho disparar — com a **query técnica pseudonimizada** (§5.3).
+4. **Geração:** dados estruturados + contexto RAG → `generateObject` + Zod, com seções fixas (Evolução no Pilates, Evolução corporal/postural, Pontos de atenção, Sugestões de progressão, Fontes consultadas). Persistido em `ai_reports` com as citações e os ids dos chunks usados (rastreabilidade LGPD + depuração de qualidade).
 
-### 7.2 (b) Chat/assistente de dúvidas técnicas
+### 6.2 Chat/assistente técnico (Fase 7)
 
-Rota de chat com streaming (`POST /api/ai/chat`, `streamText` do AI SDK v6), com o RAG exposto como **ferramentas (tool-calling)** — nem toda mensagem precisa de busca, e o modelo formula queries de busca melhores do que o embedding da mensagem crua:
+Rota de chat com streaming (`streamText`, AI SDK v6), via **tool-calling** — o modelo decide quando buscar (nem toda mensagem precisa de retrieval, e o modelo formula queries melhores que o embedding da mensagem crua):
 
-1. **`buscar_conhecimento`** — envolve `ragSearch(query, { tenantId, k: 8 })`: busca híbrida na KB (global + tenant) e devolve chunks com `context_header`, página e ids para citação `[KB-n]`.
-2. **`buscar_web`** — Tavily com allowlist/cache (§6), acionada quando os gatilhos do §6.2 se aplicam ou quando o modelo julga precisar de informação atual; resultados citados como `[WEB-n]` com "(fonte: web)".
-3. **`buscar_ficha_aluno`** — snapshot dos dados do aluno via RLS do tenant (não é RAG; documentada em `04-ia.md`).
-4. Loop de ferramentas limitado com `stopWhen: stepCountIs(5)`; resposta em streaming com persona "colega fisioterapeuta experiente" e disclaimer permanente de que não substitui julgamento clínico.
-5. Conversas persistidas por tenant em `chat_conversations` / `chat_messages` (`parts jsonb` no formato `UIMessage` do AI SDK + coluna `citations`), com RLS — o histórico hidrata o `useChat` e preserva as tool calls para replay.
+- **`buscar_conhecimento`** — chama `ragSearch` (k=8) sobre a KB (global + tenant), com fallback web condicional embutido.
+- **`buscar_ficha_aluno`** — snapshot do aluno via RLS (dados do tenant, e só dele).
+- **`buscar_web`** — Tavily direto, quando o modelo julga necessário (gatilho + allowlist + cache), sempre com query técnica pseudonimizada.
+- `stopWhen: stepCountIs(5)`; citações `[KB-n]`/`[WEB-n]` renderizadas como chips; disclaimer permanente de que não substitui julgamento clínico.
 
 ---
 
-## 8. Custos estimados (ordem de grandeza, por tenant ativo)
-
-Orçado a **preço cheio do Sonnet 5: $3/$15 por MTok** (nunca contar com preço promocional de lançamento).
+## 7. Custos estimados (ordem de grandeza, por tenant ativo)
 
 | Item | Estimativa | Custo |
 |---|---|---|
 | Embeddar um livro de 300 páginas (~200k tokens) | 1x por documento | **< $0,01** |
-| Mensagem de chat (retrieval + ~5k in / 0,6k out) | por mensagem | ~$0,024 |
-| Relatório de evolução (~15k in / 2k out) | por relatório | ~$0,075 |
-| Busca web Tavily | por busca com fallback | $0,008 (free tier cobre 1.000/mês) |
-| QStash | ingestão | free tier (1.000 msgs/dia) |
-| Query de embedding da pergunta | por busca | desprezível |
+| Query de embedding da pergunta (retrieval) | por busca | desprezível |
+| Busca web Tavily | por busca com fallback | ~$0,008 (free tier cobre 1.000/mês) |
+| QStash (ingestão) | por documento | free tier (1.000 msgs/dia) |
+| Mensagem de chat (retrieval + ~5k in / 0,6k out no Sonnet) | por mensagem | ~$0,016 |
+| Relatório de evolução (~15k in / 2k out) | por relatório | ~$0,05 |
 
-Conclusão: o custo dominante é o LLM de geração; o RAG em si (embeddings + pgvector + Tavily) é ruído. Nenhum item exige plano pago adicional no MVP além do Vercel Pro (já decidido por uso comercial + `maxDuration`). Quota mensal por tenant e logging de custo real por operação estão em `04-ia.md`.
-
----
-
-## 9. Golden set de retrieval (~15 perguntas) — teste de qualidade
-
-Teste de regressão da qualidade do retrieval, criado na Fase 5 junto com a ingestão dos 2–3 materiais seed da base global e rodado como suíte de qualidade (script Vitest dedicado, ex. `npm run test:retrieval`, contra o banco local/staging com a base seed ingerida).
-
-**Formato:** arquivo versionado (ex. `tests/retrieval/golden-set.json`) com ~15 entradas:
-
-```json
-{
-  "question": "Quais as contraindicações de extensão torácica para osteoporose?",
-  "expect": { "documentTitle": "…", "pageRange": [120, 135] }
-}
-```
-
-**Execução:** para cada pergunta, embeddar a query → `match_kb_chunks(k=8)` → **passa** se algum chunk retornado pertence ao documento/faixa de páginas esperada. Registrar também a `similarity` top-1 de cada pergunta (serve para calibrar o limiar de fallback de 0.50 do §6.2).
-
-**Critério de aceite (Fase 5):** ≥ 80% do golden set correto (≥ 12/15). Se falhar: revisar chunking/cabeçalho contextual primeiro; plano B escalonado: `text-embedding-3-large` → reranker (hook do §5).
-
-**Composição sugerida** (as perguntas finais devem ser ajustadas ao conteúdo real dos materiais seed) — cobrir deliberadamente os quatro modos de acerto/falha:
-
-| # | Pergunta (exemplo) | O que testa |
-|---|---|---|
-| 1 | "O que é a manobra de McKenzie e quando aplicar?" | Termo exato → força do FTS |
-| 2 | "Espondilolistese L5-S1: quais exercícios evitar?" | Termo clínico + nomenclatura vertebral (FTS) |
-| 3 | "Pilates para gestantes: contraindicações no primeiro trimestre" | Semântica direta |
-| 4 | "Como progredir a carga de molas com hérnia discal lombar?" | Paráfrase semântica (vetor) |
-| 5 | "Exercícios de estabilização de core para dor lombar crônica" | Semântica ampla, múltiplos capítulos |
-| 6 | "Contraindicações de extensão torácica em osteoporose" | Combinação FTS + vetor |
-| 7 | "Diferença entre anteversão e retroversão pélvica" | Conceito definido em seção específica |
-| 8 | "O que avaliar no teste de Adams?" | Termo exato raro |
-| 9 | "Escoliose estrutural vs postural: como diferenciar?" | Conceito comparativo |
-| 10 | "Ajustes do reformer para aluna com estenose de canal lombar" | Equipamento + patologia (cross-section) |
-| 11 | "Princípios de respiração no método Pilates" | Fundamento do método (recall em livro longo) |
-| 12 | "Fortalecimento do assoalho pélvico no pós-parto" | Semântica, vocabulário leigo vs técnico |
-| 13 | "Síndrome do impacto do ombro: exercícios seguros" | Patologia de membro superior |
-| 14 | "Osteoartrose de joelho: molas leves ou pesadas?" | Pergunta prática, resposta distribuída |
-| 15 | "Qual a diretriz mais recente para lombalgia inespecífica?" | **Caso negativo**: base não cobre → similarity baixa deve disparar o fallback web (§6.2) |
-
-O item 15 valida o gatilho de fallback, não o acerto de chunk. Além do golden set, o teste de isolamento é obrigatório: chunk de tenant A **nunca** aparece em busca do tenant B (teste automatizado com dois tenants seed).
+**Conclusão:** o custo dominante é o LLM de geração; o RAG em si (embeddings + pgvector + Tavily) é ruído. Nenhum item exige plano pago adicional no MVP além do Vercel Pro (já necessário por `maxDuration` e uso comercial). Detalhamento de quota/cache de geração em `04-ia.md`.
 
 ---
 
-## 10. Variáveis de ambiente
+## 8. Golden set de retrieval (teste de qualidade)
 
-```
-OPENROUTER_API_KEY=
-OPENROUTER_MODEL=anthropic/claude-sonnet-5
-OPENROUTER_FALLBACK_MODEL=anthropic/claude-sonnet-4.6   # aplicado via models no client
-OPENROUTER_FAST_MODEL=anthropic/claude-haiku-4.5
-EMBEDDINGS_MODEL=openai/text-embedding-3-small
-EMBEDDINGS_DIM=1536
-TAVILY_API_KEY=
-QSTASH_TOKEN=
-QSTASH_CURRENT_SIGNING_KEY=
-QSTASH_NEXT_SIGNING_KEY=
-SUPABASE_URL= / SUPABASE_ANON_KEY= / SUPABASE_SERVICE_ROLE_KEY=   # worker de ingestão usa service_role
-```
+Conjunto de **~15 perguntas** de fisioterapia/Pilates com os chunks/documentos esperados, rodado como **teste de regressão de retrieval** desde a Fase 5 (ver `09-testes-qualidade.md`). Roda offline contra `match_kb_chunks` (sem chamar o LLM de geração), medindo se o chunk certo aparece no top-k.
 
-Todas validadas em `lib/env.ts` (zod) e presentes no `.env.example`.
+**Critério de aceite (Fase 5):** `match_kb_chunks` retorna o resultado esperado para **≥80%** do golden set. Serve de gate contra regressões de chunking, mudança de `EMBEDDINGS_MODEL` ou ajuste dos pesos do RRF.
+
+Formato (exemplos ilustrativos — o conjunto real cobre semântica pura, termo clínico exato e casos de fallback):
+
+| # | Pergunta | Deve recuperar (top-k) | O que testa |
+|---|---|---|---|
+| 1 | "Quais contraindicações de Pilates na osteoporose?" | chunk sobre contraindicações/osteoporose | recall semântico |
+| 2 | "espondilolistese L5-S1" | chunk com o termo exato | força do FTS `portuguese` (termo raro) |
+| 3 | "Progressão de carga no reformer para lombalgia crônica" | protocolo de progressão lombar | recall em protocolo de exercício |
+| 4 | "exercícios para diástase abdominal no pós-parto" | seção sobre core/pós-parto | semântico + termo clínico |
+| 5 | "o que é a manobra de McKenzie" | chunk com o nome próprio da técnica | nome próprio (FTS pega; vetor às vezes erra) |
+| 6 | "Pilates é seguro para gestantes no primeiro trimestre?" | contraindicações/gestação | reescrita de query + recall |
+| 7 | "mobilidade torácica em hipercifose" | seção postural torácica | termo anatômico |
+| 8 | "carga de mola para iniciante com hérnia discal" | progressão/hérnia | combinação de conceitos |
+| 9 | "escala EVA de dor como interpretar" | chunk sobre avaliação de dor | sigla técnica (EVA) |
+| 10 | "fortalecimento de assoalho pélvico" | seção de assoalho pélvico | semântico direto |
+| 11 | "contraindicações de flexão de coluna na osteoporose" | contraindicação específica | precisão (não confundir com extensão) |
+| 12 | "diretriz recente 2026 sobre exercício e dor lombar" | (esperado: **disparar fallback web**) | gatilho de atualidade (§5.1) |
+| 13 | "protocolo pós-cirúrgico de LCA no Pilates" | reabilitação de joelho/LCA | sigla + contexto cirúrgico |
+| 14 | "respiração diafragmática no método Pilates" | princípio de respiração | conceito fundamental |
+| 15 | "como registrar evolução de flexibilidade" | (esperado: **base pode não cobrir** → similarity baixa) | teste do gatilho de "não encontrou base" |
+
+Cada caso guarda a query, os ids/documentos esperados e o comportamento esperado (recuperar vs. disparar fallback vs. "não há base"). O runner reporta hit-rate no top-k e serve de gate de CI quando a base global seed está carregada.
 
 ---
 
-## 11. Riscos e portas abertas
+## 9. Riscos e portas abertas
 
-- **PDF escaneado sem texto** → falha explícita no MVP; OCR em fase futura.
-- **Troca de modelo de embedding** → exige re-embedding total; mitigado por `kb_documents.embedding_model` + dimensão via env; decisão travada antes da migration de `kb_chunks`.
-- **Base global > ~500k chunks** → avaliar `halfvec(1536)` + upgrade de compute do Supabase.
-- **Qualidade de retrieval em pt-BR insatisfatória** → detectada pelo golden set (§9); plano B: `text-embedding-3-large` ou embedding multilíngue dedicado; plano C: reranker (hook já previsto no §5).
-- **Muitos documentos por aluno** → criar `student_doc_chunks` (tenant_id + student_id, RLS estrita) — decisão adiada de propósito (§4).
-- **Times/estúdios no futuro** → modelo `tenant_id` + `scope` (e o helper `private.user_tenant_ids()` retornando setof) já comporta um nível de agrupamento acima sem migração destrutiva.
-
-## Referências
-
-- OpenRouter: [Claude Sonnet 5](https://openrouter.ai/anthropic/claude-sonnet-5), [Claude Sonnet 4.6](https://openrouter.ai/anthropic/claude-sonnet-4.6), [Embeddings API](https://openrouter.ai/docs/api/reference/embeddings), [lista de modelos de embedding](https://openrouter.ai/docs/api/api-reference/embeddings/list-embeddings-models)
-- OpenAI: [pricing embeddings](https://developers.openai.com/api/docs/pricing), [text-embedding-3-small](https://developers.openai.com/api/docs/models/text-embedding-3-small)
-- Supabase: [pgvector](https://supabase.com/docs/guides/database/extensions/pgvector), [HNSW](https://supabase.com/docs/guides/ai/vector-indexes/hnsw-indexes), [Hybrid search](https://supabase.com/docs/guides/ai/hybrid-search), [HNSW performance](https://supabase.com/blog/increase-performance-pgvector-hnsw), [Edge Functions limits](https://supabase.com/docs/guides/functions/limits)
-- Vercel: [duration](https://vercel.com/docs/functions/configuring-functions/duration), [fluid compute](https://vercel.com/docs/fluid-compute), [limits](https://vercel.com/docs/functions/limitations)
-- PDF em serverless: [unpdf (GitHub)](https://github.com/unjs/unpdf), [unpdf vs pdf-parse na Vercel](https://chudi.dev/blog/serverless-pdf-processing-unpdf-vs-pdfparse)
-- Web search: [Tavily credits & pricing](https://docs.tavily.com/documentation/api-credits), [Exa pricing](https://exa.ai/pricing)
-- Fila: [QStash pricing](https://upstash.com/pricing/qstash)
-- RRF/híbrido: [pgvector + FTS com RRF](https://dev.to/lpossamai/building-hybrid-search-for-rag-combining-pgvector-and-full-text-search-with-reciprocal-rank-fusion-6nk)
+| Risco | Mitigação |
+|---|---|
+| **PDF escaneado sem texto** | Falha explícita em pt-BR no MVP (`status='failed'`); OCR em fase futura. |
+| **Troca do modelo de embedding** = re-embeddar tudo | `EMBEDDINGS_MODEL`/`EMBEDDINGS_DIM` via env + coluna `embedding_model` em `kb_documents`; decisão travada antes da migration de `kb_chunks`. |
+| **Base global > ~500k chunks** | Avaliar `halfvec(1536)` + upgrade de compute do Supabase; monitorar RAM. |
+| **Retrieval em pt-BR insatisfatório** | Golden set (§8) como regressão desde a Fase 5; plano B `text-embedding-3-large`; plano C reranker (hook em §3.3). |
+| **Retry do QStash duplicando chunks** | Delete-antes-de-inserir por lote (§2.6) — idempotência garantida. |
+| **Muitos documentos por aluno** (não cabe em contexto) | Criar `student_doc_chunks` por aluno (RLS estrita) — decisão adiada (§4), sem quebrar a fronteira LGPD. |
+| **Times/estúdios no futuro** | `tenant_id` + `scope` já comportam um nível de agrupamento acima sem migração destrutiva. |

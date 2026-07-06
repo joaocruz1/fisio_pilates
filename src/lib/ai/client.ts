@@ -17,6 +17,6 @@ export function openrouter() {
 
 export const MODELS = {
   main: () => env().OPENROUTER_MODEL,
-  fallback: () => env().OPENROUTER_FALLBACK_MODEL,
-  small: () => env().OPENROUTER_SMALL_MODEL,
+  fallback: () => env().OPENROUTER_MODEL_FALLBACK,
+  cheap: () => env().OPENROUTER_MODEL_CHEAP,
 } as const;
