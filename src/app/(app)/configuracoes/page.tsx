@@ -1,6 +1,8 @@
 import { SignOutIcon } from "@phosphor-icons/react/ssr";
+import Link from "next/link";
 import { AlterarSenhaForm } from "@/components/configuracoes/alterar-senha-form";
 import { PerfilForm } from "@/components/configuracoes/perfil-form";
+import { ExcluirConta } from "@/components/lgpd/excluir-conta";
 import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -82,9 +84,16 @@ export default async function ConfiguracoesPage() {
           <CardHeader>
             <CardTitle>Privacidade e dados</CardTitle>
             <CardDescription>
-              Exportar seus dados e excluir a conta estarão disponíveis em breve.
+              Leia a{" "}
+              <Link href="/privacidade" className="underline">
+                Política de Privacidade
+              </Link>
+              . A exportação dos dados de cada aluno fica na ficha dele (aba Dados).
             </CardDescription>
           </CardHeader>
+          <CardContent>
+            <ExcluirConta />
+          </CardContent>
         </Card>
       </div>
     </>

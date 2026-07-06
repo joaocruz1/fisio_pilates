@@ -42,6 +42,7 @@ export async function updateSession(request: NextRequest) {
   const isPublic =
     pathname === "/" ||
     pathname.startsWith("/auth") ||
+    pathname.startsWith("/privacidade") ||
     isAuthEntry ||
     pathname === "/redefinir-senha";
 

@@ -70,15 +70,48 @@ export async function POST(req: Request) {
 
   try {
     const provider = openrouter();
+
+    // Vision: fotos posturais como content parts (signed URLs de 5 min, máx. 6).
+    const fotos: URL[] = [];
+    if (dossie.temFotos) {
+      const { data: docs } = await supabase
+        .from("documents")
+        .select("bucket, storage_path")
+        .eq("student_id", body.studentId)
+        .eq("kind", "postural_photo")
+        .is("deleted_at", null)
+        .limit(6);
+      for (const d of docs ?? []) {
+        const { data } = await supabase.storage.from(d.bucket).createSignedUrl(d.storage_path, 300);
+        if (data?.signedUrl) fotos.push(new URL(data.signedUrl));
+      }
+    }
+
+    const baseArgs = {
+      model: provider.chat(MODELS.main()),
+      schema: relatorioSchema,
+      system: analiseSystemPrompt(),
+      maxOutputTokens: 4000,
+      abortSignal: AbortSignal.timeout(120_000),
+    };
     const { object, usage } = await withRetry(() =>
-      generateObject({
-        model: provider.chat(MODELS.main()),
-        schema: relatorioSchema,
-        system: analiseSystemPrompt(),
-        prompt: dossie.promptUser,
-        maxOutputTokens: 4000,
-        abortSignal: AbortSignal.timeout(120_000),
-      }),
+      fotos.length
+        ? generateObject({
+            ...baseArgs,
+            messages: [
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "text",
+                    text: `${dossie.promptUser}\n\nAs imagens anexadas são fotos posturais. Descreva apenas achados observáveis com cautela (ângulo/iluminação podem enganar) e preencha observacoes_posturais. Nunca diagnostique.`,
+                  },
+                  ...fotos.map((image) => ({ type: "image" as const, image })),
+                ],
+              },
+            ],
+          })
+        : generateObject({ ...baseArgs, prompt: dossie.promptUser }),
     );
 
     await supabase
