@@ -9,6 +9,8 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    // Sem testes ainda (chegam a partir da Fase 2) — não falhar o CI por isso.
+    passWithNoTests: true,
   },
   resolve: {
     alias: {
