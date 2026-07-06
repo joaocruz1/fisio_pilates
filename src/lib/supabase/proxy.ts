@@ -35,16 +35,29 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  const isAuthRoute =
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/cadastro") ||
-    pathname.startsWith("/recuperar-senha") ||
-    pathname.startsWith("/redefinir-senha");
-  const isPublic = pathname === "/" || pathname.startsWith("/auth") || isAuthRoute;
+  // Telas de auth (sem sessão). /redefinir-senha é exceção: precisa de sessão
+  // ativa (o link de recuperação cria uma) — não redirecionar dela.
+  const isAuthEntry =
+    pathname === "/login" || pathname === "/cadastro" || pathname === "/recuperar-senha";
+  const isPublic =
+    pathname === "/" ||
+    pathname.startsWith("/auth") ||
+    isAuthEntry ||
+    pathname === "/redefinir-senha";
 
+  // Sem sessão em rota protegida → login, preservando o destino.
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    url.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  // Com sessão numa tela de entrada de auth → dashboard.
+  if (user && isAuthEntry) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    url.search = "";
     return NextResponse.redirect(url);
   }
 

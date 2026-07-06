@@ -29,7 +29,7 @@
       "react": "recommended"
     },
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "suspicious": {
         "noConsole": { "level": "warn", "options": { "allow": ["warn", "error"] } }
       }

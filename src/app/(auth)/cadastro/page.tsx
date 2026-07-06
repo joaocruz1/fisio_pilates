@@ -1,11 +1,15 @@
-export default function Page() {
+import { CadastroForm } from "@/components/auth/cadastro-form";
+
+export const metadata = { title: "Criar conta" };
+
+export default function CadastroPage() {
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-2 p-8">
-      <h1 className="text-2xl font-semibold">Criar conta</h1>
-      <p className="text-muted-foreground">Cadastre-se como profissional (com aceite da LGPD).</p>
-      <p className="text-sm text-muted-foreground">
-        Em construção — ver planejamento em <code>docs/plan/</code>.
-      </p>
-    </main>
+    <div className="flex flex-col gap-6">
+      <div className="text-center">
+        <h1 className="text-xl font-semibold">Criar conta</h1>
+        <p className="text-sm text-muted-foreground">Comece a organizar seus alunos.</p>
+      </div>
+      <CadastroForm />
+    </div>
   );
 }
