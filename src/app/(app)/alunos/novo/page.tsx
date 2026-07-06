@@ -1,11 +1,15 @@
-export default function Page() {
+import { AlunoForm } from "@/components/alunos/aluno-form";
+import { PageHeader } from "@/components/shared/page-header";
+
+export const metadata = { title: "Novo aluno" };
+
+export default function NovoAlunoPage() {
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-2 p-8">
-      <h1 className="text-2xl font-semibold">Novo aluno</h1>
-      <p className="text-muted-foreground">Cadastre um novo aluno.</p>
-      <p className="text-sm text-muted-foreground">
-        Em construção — ver planejamento em <code>docs/plan/</code>.
-      </p>
-    </main>
+    <>
+      <PageHeader title="Novo aluno" description="Cadastre um novo aluno." />
+      <div className="mx-auto w-full max-w-2xl p-4 md:p-6">
+        <AlunoForm />
+      </div>
+    </>
   );
 }

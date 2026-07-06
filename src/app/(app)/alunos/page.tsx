@@ -1,11 +1,23 @@
-export default function Page() {
+import Link from "next/link";
+import { ListaAlunos } from "@/components/alunos/lista-alunos";
+import { PageHeader } from "@/components/shared/page-header";
+import { Button } from "@/components/ui/button";
+import { listStudents } from "@/server/students";
+
+export const metadata = { title: "Alunos" };
+
+export default async function AlunosPage() {
+  const alunos = await listStudents();
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-2 p-8">
-      <h1 className="text-2xl font-semibold">Alunos</h1>
-      <p className="text-muted-foreground">Sua carteira de alunos.</p>
-      <p className="text-sm text-muted-foreground">
-        Em construção — ver planejamento em <code>docs/plan/</code>.
-      </p>
-    </main>
+    <>
+      <PageHeader title="Alunos" description="Sua carteira de alunos.">
+        <Button asChild>
+          <Link href="/alunos/novo">Novo aluno</Link>
+        </Button>
+      </PageHeader>
+      <div className="p-4 md:p-6">
+        <ListaAlunos alunos={alunos} />
+      </div>
+    </>
   );
 }

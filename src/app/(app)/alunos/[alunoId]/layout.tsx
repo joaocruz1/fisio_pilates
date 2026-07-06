@@ -1,9 +1,11 @@
-import Link from "next/link";
+import { AcoesAluno } from "@/components/alunos/acoes-aluno";
+import { AlunoTabs } from "@/components/alunos/aluno-tabs";
+import { Badge } from "@/components/ui/badge";
+import { rotuloStatusAluno, type StatusAluno } from "@/lib/labels";
+import { idadeAnos, linkWhatsApp } from "@/lib/utils";
+import { getStudent } from "@/server/students";
 
-/**
- * Layout da ficha do aluno: cabeçalho + abas navegáveis por URL.
- * O cabeçalho com dados reais do aluno chega na Fase 2.
- */
+/** Cabeçalho fixo do aluno + abas (navegáveis por URL). */
 export default async function AlunoLayout({
   children,
   params,
@@ -12,28 +14,46 @@ export default async function AlunoLayout({
   params: Promise<{ alunoId: string }>;
 }) {
   const { alunoId } = await params;
-  const base = `/alunos/${alunoId}`;
-  const abas = [
-    { href: base, label: "Dados" },
-    { href: `${base}/avaliacao`, label: "Avaliação" },
-    { href: `${base}/sessoes`, label: "Sessões" },
-    { href: `${base}/documentos`, label: "Documentos" },
-    { href: `${base}/evolucao`, label: "Evolução" },
-  ];
+  const aluno = await getStudent(alunoId);
+  const idade = idadeAnos(aluno.birth_date);
+  const whats = linkWhatsApp(aluno.phone);
+  const statusLabel = rotuloStatusAluno[aluno.status as StatusAluno] ?? aluno.status;
 
   return (
     <div className="flex flex-col">
-      <nav className="flex gap-1 overflow-x-auto border-b p-2">
-        {abas.map((aba) => (
-          <Link
-            key={aba.href}
-            href={aba.href}
-            className="whitespace-nowrap rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            {aba.label}
-          </Link>
-        ))}
-      </nav>
+      <div className="flex items-start justify-between gap-3 border-b p-4 md:px-6">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <h1 className="truncate text-xl font-semibold">{aluno.full_name}</h1>
+            <Badge variant={aluno.status === "active" ? "default" : "secondary"}>
+              {statusLabel}
+            </Badge>
+          </div>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {idade != null ? `${idade} anos` : "Idade não informada"}
+            {aluno.phone ? (
+              <>
+                {" · "}
+                {whats ? (
+                  <a
+                    href={whats}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    {aluno.phone}
+                  </a>
+                ) : (
+                  aluno.phone
+                )}
+              </>
+            ) : null}
+          </p>
+        </div>
+        <AcoesAluno id={aluno.id} status={aluno.status} />
+      </div>
+
+      <AlunoTabs base={`/alunos/${alunoId}`} />
       {children}
     </div>
   );

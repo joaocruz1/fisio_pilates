@@ -1,11 +1,19 @@
-export default function Page() {
+import { AlunoForm } from "@/components/alunos/aluno-form";
+import { formatarData } from "@/lib/utils";
+import { getStudent } from "@/server/students";
+
+export default async function AlunoDadosPage({ params }: { params: Promise<{ alunoId: string }> }) {
+  const { alunoId } = await params;
+  const aluno = await getStudent(alunoId);
+
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-2 p-8">
-      <h1 className="text-2xl font-semibold">Dados do aluno</h1>
-      <p className="text-muted-foreground">Informações cadastrais.</p>
-      <p className="text-sm text-muted-foreground">
-        Em construção — ver planejamento em <code>docs/plan/</code>.
+    <div className="mx-auto w-full max-w-2xl p-4 md:p-6">
+      <p className="mb-4 text-sm text-muted-foreground">
+        {aluno.consent_signed_at
+          ? `Consentimento LGPD registrado em ${formatarData(aluno.consent_signed_at)}.`
+          : "Consentimento LGPD ainda não registrado."}
       </p>
-    </main>
+      <AlunoForm aluno={aluno} />
+    </div>
   );
 }
