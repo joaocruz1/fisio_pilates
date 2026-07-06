@@ -678,6 +678,57 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      chat_conversations: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          user_id: string;
+          student_id: string | null;
+          title: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          user_id: string;
+          student_id?: string | null;
+          title?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          student_id?: string | null;
+          title?: string | null;
+        };
+        Relationships: [];
+      };
+      chat_messages: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          tenant_id: string;
+          user_id: string;
+          role: string;
+          parts: Json;
+          citations: Json;
+          usage: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          tenant_id: string;
+          user_id: string;
+          role: string;
+          parts?: Json;
+          citations?: Json;
+          usage?: Json;
+          created_at?: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

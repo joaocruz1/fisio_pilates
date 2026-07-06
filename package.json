@@ -15,6 +15,7 @@
     "db:reset": "supabase db reset"
   },
   "dependencies": {
+    "@ai-sdk/react": "^4.0.17",
     "@hookform/resolvers": "^5.4.0",
     "@openrouter/ai-sdk-provider": "^2.10.0",
     "@phosphor-icons/react": "^2.1.10",
