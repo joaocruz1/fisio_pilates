@@ -12,7 +12,9 @@
     "test": "vitest",
     "db:types": "supabase gen types typescript --local > src/lib/types/database.types.ts",
     "db:push": "supabase db push",
-    "db:reset": "supabase db reset"
+    "db:reset": "supabase db reset",
+    "seed:user": "node --env-file=.env.local scripts/seed-user.mjs",
+    "seed:kb": "node --env-file=.env.local scripts/seed-kb.mjs"
   },
   "dependencies": {
     "@ai-sdk/react": "^4.0.17",
