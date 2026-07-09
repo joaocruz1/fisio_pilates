@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AnexarContexto } from "@/components/chat/anexar-contexto";
+import { ModeloPicker } from "@/components/chat/modelo-picker";
 import { AiThinking } from "@/components/shared/ai-thinking";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Markdown } from "@/components/shared/markdown";
@@ -56,6 +57,9 @@ export function Assistente({
   const router = useRouter();
   const [input, setInput] = useState("");
   const [pinned, setPinned] = useState<PinnedItem[]>(initialPinned);
+  // Override de modelo SÓ dessa conversa (vem do Picker no header).
+  // null = usa a preferência salva em /configuracoes.
+  const [modeloOverride, setModeloOverride] = useState<string | null>(null);
   const fimRef = useRef<HTMLDivElement>(null);
   // Mantém o valor atual dos pins acessível dentro do callback do transport.
   const pinnedRef = useRef(pinned);
@@ -65,7 +69,14 @@ export function Assistente({
     transport: new DefaultChatTransport({
       api: "/api/ai/chat",
       prepareSendMessagesRequest: ({ messages, body }) => ({
-        body: { ...body, messages, conversationId, pinned: pinnedRef.current },
+        body: {
+          ...body,
+          messages,
+          conversationId,
+          pinned: pinnedRef.current,
+          // Override de modelo: se null, o backend usa a preferência.
+          model: modeloOverride ?? undefined,
+        },
       }),
     }),
   });
@@ -156,6 +167,9 @@ export function Assistente({
 
       {/* Conversa */}
       <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-center justify-end border-b px-3 py-2">
+          <ModeloPicker value={modeloOverride} onChange={setModeloOverride} />
+        </div>
         <div className="flex-1 overflow-y-auto p-4">
           {messages.length === 0 ? (
             <div className="mx-auto flex max-w-md flex-col items-center gap-4 pt-16 text-center">

@@ -55,7 +55,10 @@ export async function exportarDadosAluno(
   return { ok: true, data: { json: JSON.stringify(pacote, null, 2) } };
 }
 
-/** Exclusão da conta: apaga o tenant (cascade) e a usuária. Só a titular (owner). */
+/** Exclusão da conta: apaga o tenant (cascade) e a usuária. Só a titular (owner).
+ *  Antes de excluir: cancela assinatura Stripe (B16) para evitar cobranças em
+ *  tenant deletado. Renata (vitalicio) não tem subscription e o helper é no-op.
+ */
 export async function excluirConta(): Promise<ActionResult> {
   const ctx = await requireTenant();
   if (ctx.role !== "owner") {
@@ -63,11 +66,24 @@ export async function excluirConta(): Promise<ActionResult> {
   }
 
   const admin = createAdminClient();
-  // Apaga o tenant (cascade remove alunos, sessões, documentos, relatórios, chats…).
+
+  // 1) Cancela assinatura Stripe, se houver. Para 'vitalicio' é no-op.
+  if (ctx.tenant.stripe_subscription_id) {
+    try {
+      const { cancelarAssinaturaImediato } = await import("@/server/actions/billing");
+      await cancelarAssinaturaImediato(ctx.tenant.id);
+    } catch (err) {
+      // Não bloqueia a exclusão por falha de cancelamento — loga e segue.
+      // eslint-disable-next-line no-console
+      console.error("[lgpd] Falha ao cancelar assinatura antes de excluir conta:", err);
+    }
+  }
+
+  // 2) Apaga o tenant (cascade remove alunos, sessões, documentos, relatórios, chats…).
   const { error: tErr } = await admin.from("tenants").delete().eq("id", ctx.tenant.id);
   if (tErr) return { ok: false, erro: "Não foi possível excluir a conta. Tente novamente." };
 
-  // Remove a usuária do Auth.
+  // 3) Remove a usuária do Auth.
   await admin.auth.admin.deleteUser(ctx.user.id);
   // Nota: a purga dos binários em Storage é feita por um job de limpeza (backlog).
 

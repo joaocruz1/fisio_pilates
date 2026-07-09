@@ -19,4 +19,8 @@ export const MODELS = {
   main: () => env().OPENROUTER_MODEL,
   fallback: () => env().OPENROUTER_MODEL_FALLBACK,
   cheap: () => env().OPENROUTER_MODEL_CHEAP,
+  // Default p/ transcrição de imagens (Gemini 2.5 Flash). Override opcional
+  // via AI_MODEL_VISION. O catálogo "oficial" vive em src/lib/ai/modelos.ts
+  // e respeita a preferência da usuária (ver getModeloParaFeature).
+  vision: () => process.env.AI_MODEL_VISION || "google/gemini-2.5-flash",
 } as const;

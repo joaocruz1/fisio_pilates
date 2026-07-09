@@ -33,7 +33,6 @@ if (user) {
     email_confirm: true,
     user_metadata: { full_name: NOME },
   });
-  console.log("Usuária já existia — senha e confirmação atualizadas.");
 } else {
   const { data, error } = await admin.auth.admin.createUser({
     email: EMAIL,
@@ -43,7 +42,6 @@ if (user) {
   });
   if (error) throw error;
   user = data.user;
-  console.log("Usuária criada (trigger gerou tenant/profile/membership).");
 }
 
 // Onboarding concluído + nomes preenchidos → login vai direto ao dashboard.
@@ -59,9 +57,8 @@ await admin
   .eq("id", user.id);
 
 if (member?.tenant_id) {
-  await admin.from("tenants").update({ name: ESTUDIO }).eq("id", member.tenant_id);
+  await admin
+    .from("tenants")
+    .update({ name: ESTUDIO, plan: "vitalicio" })
+    .eq("id", member.tenant_id);
 }
-
-console.log(
-  `\n✅ Pronto. Login: ${EMAIL} / ${PASSWORD} (onboarding concluído, estúdio "${ESTUDIO}").`,
-);

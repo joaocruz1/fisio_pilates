@@ -2,6 +2,8 @@ import { streamObject } from "ai";
 import { NextResponse } from "next/server";
 import { MODELS, openrouter } from "@/lib/ai/client";
 import { buildDossie } from "@/lib/ai/dossie";
+import { suportaFeature } from "@/lib/ai/modelos";
+import { getModeloParaFeature } from "@/lib/ai/preferencias";
 import { analiseSystemPrompt } from "@/lib/ai/prompts/analise-evolucao";
 import { relatorioSchema } from "@/lib/ai/schemas/relatorio";
 import { assertQuota, logUsage, mapAiError, QuotaError } from "@/lib/ai/usage";
@@ -56,6 +58,9 @@ export async function POST(req: Request) {
         });
 
         // Reserva a linha; unique dá cache/idempotência e barra duplo clique.
+        // O modelo final é resolvido depois (depende de fotos + preferência).
+        // Gravamos um placeholder em `model` só pra satisfazer a coluna; o log
+        // de uso é a fonte de verdade.
         const { data: row, error: insErr } = await supabase
           .from("ai_reports")
           .insert({
@@ -113,8 +118,19 @@ export async function POST(req: Request) {
         send({ type: "stage", stage: "gerando" });
 
         const provider = openrouter();
+        // Resolve modelo pela preferência da usuária. Se o relatório inclui
+        // fotos posturais e o modelo não suporta vision, cai pro MODELS.main()
+        // (Sonnet 5) com warning — não quebra o request.
+        let modeloRelatorio = await getModeloParaFeature(ctx.user.id, "relatorio");
+        if (fotos.length && !suportaFeature(modeloRelatorio, "vision")) {
+          console.warn(
+            `[analyses] modelo ${modeloRelatorio} não suporta vision; caindo para MODELS.main()`,
+            { tenantId: ctx.tenant.id, userId: ctx.user.id },
+          );
+          modeloRelatorio = MODELS.main();
+        }
         const baseArgs = {
-          model: provider.chat(MODELS.main()),
+          model: provider.chat(modeloRelatorio),
           schema: relatorioSchema,
           system: analiseSystemPrompt(),
           maxOutputTokens: 4000,
@@ -164,9 +180,12 @@ export async function POST(req: Request) {
           tenantId: ctx.tenant.id,
           userId: ctx.user.id,
           kind: "report",
-          model: MODELS.main(),
+          model: modeloRelatorio,
           usage,
-          metadata: { reportId: row.id },
+          metadata: {
+            reportId: row.id,
+            visionFallback: fotos.length > 0 && modeloRelatorio === MODELS.main(),
+          },
         });
 
         send({ type: "done", id: row.id });

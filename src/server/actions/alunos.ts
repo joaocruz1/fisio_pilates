@@ -1,6 +1,7 @@
 "use server";
 import "server-only";
 import { revalidatePath } from "next/cache";
+import { assertLimiteAlunos, LimiteExcedidoError } from "@/lib/billing/limites";
 import { STATUS_ALUNO, type StatusAluno } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -20,6 +21,14 @@ const nn = (v?: string | null) => {
 
 export async function criarAluno(input: CriarAlunoInput): Promise<ActionResult<{ id: string }>> {
   const ctx = await requireTenant();
+
+  // T8: limite de alunas por plano.
+  try {
+    await assertLimiteAlunos(ctx.tenant.id);
+  } catch (err) {
+    if (err instanceof LimiteExcedidoError) return { ok: false, erro: err.motivo };
+    throw err;
+  }
 
   const parsed = criarAlunoSchema.safeParse(input);
   if (!parsed.success) {

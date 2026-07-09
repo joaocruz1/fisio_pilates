@@ -15,7 +15,7 @@ export function ExcluirConta() {
   return (
     <ConfirmDialog
       title="Excluir sua conta?"
-      description="Todos os seus dados e alunos serão apagados permanentemente. Esta ação não pode ser desfeita."
+      description="Todos os seus dados e alunos serão apagados permanentemente. Se você tem assinatura ativa, ela será cancelada antes da exclusão. Esta ação não pode ser desfeita."
       confirmLabel="Excluir minha conta"
       destructive
       onConfirm={excluir}

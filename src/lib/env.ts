@@ -47,6 +47,25 @@ const serverSchema = z.object({
   // 1º resultado da busca via YouTube Data API). Sem a chave, o app abre a busca
   // no YouTube/TikTok em nova aba (o embed por busca do YouTube foi descontinuado).
   YOUTUBE_API_KEY: optionalIntegrationString,
+
+  // --- Stripe (Billing) --------------------------------------------------------
+  // Obrigatórias para o handler de webhook e para criar checkout/portal.
+  STRIPE_SECRET_KEY: z.string().min(1),
+  STRIPE_WEBHOOK_SECRET: z.string().min(1),
+  // Pública (NEXT_PUBLIC_*) — usada em eventual redirect client-side, mas a
+  // SDK oficial recomenda mantê-la só no server; mantemos pública por convenção.
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().min(1),
+
+  // Price IDs por plano. Opcionalmente ausentes em dev se você ainda não criou
+  // os Prices no Dashboard. Validados no `src/lib/billing/plans.ts` (lazy).
+  STRIPE_PRICE_ESSENCIAL: optionalIntegrationString,
+  STRIPE_PRICE_PROFISSIONAL: optionalIntegrationString,
+  STRIPE_PRICE_CLINICA: optionalIntegrationString,
+  // Pay-as-you-go: 1 assinatura PAYG com 3 items metered (chat, report, vision).
+  STRIPE_PRICE_PAYG_BASE: optionalIntegrationString,
+  STRIPE_PRICE_PAYG_CHAT: optionalIntegrationString,
+  STRIPE_PRICE_PAYG_REPORT: optionalIntegrationString,
+  STRIPE_PRICE_PAYG_VISION: optionalIntegrationString,
 });
 
 export type ServerEnv = z.infer<typeof serverSchema>;

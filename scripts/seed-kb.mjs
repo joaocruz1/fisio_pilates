@@ -84,15 +84,14 @@ const files = readdirSync(SEED_DIR)
   .sort();
 if (files.length === 0) throw new Error(`Nenhum .md em ${SEED_DIR}`);
 
-let totalChunks = 0;
-let totalTokens = 0;
+let _totalChunks = 0;
+let _totalTokens = 0;
 
 for (const file of files) {
   const raw = readFileSync(join(SEED_DIR, file), "utf8");
   const title = (raw.match(/^#\s+(.+)$/m)?.[1] ?? file.replace(/\.md$/, "")).trim();
   const chunks = chunkBySections(raw, title);
   if (chunks.length === 0) {
-    console.log(`⚠️  ${file} vazio — pulando`);
     continue;
   }
 
@@ -129,7 +128,7 @@ for (const file of files) {
         token_count: Math.round(c.content.length / 4),
         embedding: vetor(embs[j]),
       });
-      totalTokens += Math.round((c.header.length + c.content.length) / 4);
+      _totalTokens += Math.round((c.header.length + c.content.length) / 4);
     });
   }
 
@@ -147,11 +146,5 @@ for (const file of files) {
     })
     .eq("id", doc.id);
 
-  totalChunks += rows.length;
-  console.log(`✅ ${file} → ${rows.length} chunks`);
+  _totalChunks += rows.length;
 }
-
-console.log(
-  `\n🎉 Base global populada: ${files.length} documentos, ${totalChunks} chunks.\n` +
-    `   Custo aprox. de embeddings: US$ ${((totalTokens / 1e6) * 0.02).toFixed(4)}`,
-);

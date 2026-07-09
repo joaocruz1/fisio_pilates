@@ -74,3 +74,44 @@ export async function requireOnboarding(): Promise<TenantContext> {
   if (ctx.profile.onboarding_completed_at) redirect("/dashboard");
   return ctx;
 }
+
+// ----------------------------------------------------------------------------
+// Admin helpers (B12, B13)
+// ----------------------------------------------------------------------------
+
+export type AdminRole = "super_admin" | "support" | "finance";
+
+export type AdminContext = {
+  user: NonNullable<Awaited<ReturnType<typeof getUser>>>;
+  role: AdminRole;
+};
+
+/** Lê o registro de admin_users do auth.uid() (RLS permite ver o próprio). */
+export const getAdminContext = cache(async (): Promise<AdminContext | null> => {
+  const user = await getUser();
+  if (!user) return null;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("admin_users")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (!data) return null;
+  return { user, role: data.role as AdminRole };
+});
+
+/** Áreas admin: exige usuária em admin_users. Redireciona se não for admin. */
+export async function requireAdmin(): Promise<AdminContext> {
+  const ctx = await getAdminContext();
+  if (!ctx) redirect("/dashboard"); // não-admin cai fora do /admin
+  return ctx;
+}
+
+/** Versão que aceita uma role específica (ex: super_admin para /admin/admins). */
+export async function requireAdminRole(role: AdminRole): Promise<AdminContext> {
+  const ctx = await requireAdmin();
+  if (ctx.role !== role && ctx.role !== "super_admin") {
+    redirect("/admin"); // sem permissão
+  }
+  return ctx;
+}

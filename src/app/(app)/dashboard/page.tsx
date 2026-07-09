@@ -1,6 +1,7 @@
 import { CalendarCheckIcon, UserPlusIcon, UsersIcon, WarningIcon } from "@phosphor-icons/react/ssr";
 import { format } from "date-fns";
 import Link from "next/link";
+import { ModeloBadge } from "@/components/dashboard/modelo-badge";
 import { CountUp, HoverCard } from "@/components/motion";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
@@ -64,9 +65,12 @@ export default async function DashboardPage() {
   return (
     <>
       <PageHeader title={saudacao(profile.full_name)} description="Aqui está o resumo do seu dia.">
-        <Button asChild>
-          <Link href="/alunos/novo">Novo aluno</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <ModeloBadge />
+          <Button asChild>
+            <Link href="/alunos/novo">Novo aluno</Link>
+          </Button>
+        </div>
       </PageHeader>
 
       <div className="flex flex-col gap-6 p-4 md:p-6">

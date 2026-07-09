@@ -31,7 +31,14 @@ export function LoginForm() {
       toast.error(mensagemErroAuth(error));
       return;
     }
-    router.push(params.get("redirect") ?? "/dashboard");
+    // B12: se a conta é admin, vai pro painel admin; senão, fluxo normal.
+    const { data: adminRow } = await supabase
+      .from("admin_users")
+      .select("id")
+      .eq("id", (await supabase.auth.getUser()).data.user?.id ?? "")
+      .maybeSingle();
+    const destino = adminRow ? "/admin" : (params.get("redirect") ?? "/dashboard");
+    router.push(destino);
     router.refresh();
   }
 

@@ -1,13 +1,16 @@
 import { SignOutIcon } from "@phosphor-icons/react/ssr";
 import Link from "next/link";
 import { AlterarSenhaForm } from "@/components/configuracoes/alterar-senha-form";
+import { ModeloForm } from "@/components/configuracoes/modelo-form";
 import { PerfilForm } from "@/components/configuracoes/perfil-form";
 import { ExcluirConta } from "@/components/lgpd/excluir-conta";
 import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getPreferenciasIA, type NivelVision } from "@/lib/ai/preferencias";
 import { getUsoMensal } from "@/lib/ai/usage";
+import { textos } from "@/lib/textos";
 import { signOut } from "@/server/actions/auth";
 import { requireTenant } from "@/server/auth";
 
@@ -16,6 +19,7 @@ export const metadata = { title: "Configurações" };
 export default async function ConfiguracoesPage() {
   const { user, profile, tenant } = await requireTenant();
   const uso = await getUsoMensal(tenant.id);
+  const prefs = await getPreferenciasIA(user.id);
 
   return (
     <>
@@ -61,6 +65,20 @@ export default async function ConfiguracoesPage() {
           </CardHeader>
           <CardContent>
             <Badge variant="secondary">Gratuito</Badge>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{textos.modelo.titulo}</CardTitle>
+            <CardDescription>{textos.modelo.descricao}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ModeloForm
+              defaultChat={prefs.chat}
+              defaultReport={prefs.report}
+              defaultVision={prefs.vision as NivelVision}
+            />
           </CardContent>
         </Card>
 
