@@ -6,7 +6,7 @@ import { type DocumentoMetaInput, documentoMetaSchema } from "@/lib/validators/d
 import type { ActionResult } from "@/server/actions/result";
 import { requireTenant } from "@/server/auth";
 import { registrarAuditoria } from "@/server/services/audit";
-import { extrairTextoPdf } from "@/server/services/pdf";
+import { extrairTextoDocumento } from "@/server/services/extract";
 import {
   ALLOWED_DOC_MIMES,
   MAX_DOC_BYTES,
@@ -57,12 +57,22 @@ export async function confirmarUpload(
   const meta = metaParsed.data;
   const supabase = await createClient();
 
+  // Extrai texto (pdf/docx/texto/imagem) para alimentar a IA. Imagens e PDFs
+  // escaneados passam por transcrição de visão. (Em produção, mover extração
+  // pesada para um job de fundo por causa do timeout de serverless.)
   let extractedText: string | null = null;
-  if (input.mimeType === "application/pdf" && input.sizeBytes <= EXTRACAO_MAX_BYTES) {
+  if (input.sizeBytes <= EXTRACAO_MAX_BYTES) {
     const { data: blob } = await supabase.storage
       .from(STUDENT_DOCS_BUCKET)
       .download(input.storagePath);
-    if (blob) extractedText = await extrairTextoPdf(new Uint8Array(await blob.arrayBuffer()));
+    if (blob) {
+      extractedText = await extrairTextoDocumento({
+        bytes: new Uint8Array(await blob.arrayBuffer()),
+        mimeType: input.mimeType,
+        tenantId: ctx.tenant.id,
+        userId: ctx.user.id,
+      });
+    }
   }
 
   const { error } = await supabase.from("documents").insert({

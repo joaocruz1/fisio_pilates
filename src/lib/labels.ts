@@ -78,6 +78,7 @@ export const rotuloAparelho: Record<Aparelho, string> = {
 
 // --- Documentos ---
 export const DOC_KINDS = [
+  "lesson",
   "exam",
   "postural_photo",
   "medical_report",
@@ -86,6 +87,7 @@ export const DOC_KINDS = [
 ] as const;
 export type DocKind = (typeof DOC_KINDS)[number];
 export const rotuloDocKind: Record<DocKind, string> = {
+  lesson: "Aulas / histórico",
   exam: "Exames",
   postural_photo: "Fotos posturais",
   medical_report: "Laudos",

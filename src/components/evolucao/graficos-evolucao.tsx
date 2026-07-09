@@ -55,7 +55,7 @@ export function GraficosEvolucao({
 }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <Grafico title="Dor ao longo das sessões (0–10)" vazio={dor.length < 2}>
+      <Grafico title="Dor ao longo das aulas (0–10)" vazio={dor.length < 2}>
         <LineChart data={dor}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
           <XAxis dataKey="data" fontSize={11} />
@@ -65,7 +65,7 @@ export function GraficosEvolucao({
         </LineChart>
       </Grafico>
 
-      <Grafico title="Sessões por mês" vazio={frequencia.length === 0}>
+      <Grafico title="Aulas por mês" vazio={frequencia.length === 0}>
         <BarChart data={frequencia}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
           <XAxis dataKey="mes" fontSize={11} />

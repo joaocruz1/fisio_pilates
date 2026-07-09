@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google";
+import { Geist, Geist_Mono, JetBrains_Mono, Sora } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "@/components/ui/sonner";
+import { textos } from "@/lib/textos";
 import { cn } from "@/lib/utils";
 
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
@@ -15,8 +17,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-import { Toaster } from "@/components/ui/sonner";
-import { textos } from "@/lib/textos";
+// Fonte de display para títulos (headings) — mais personalidade que a de corpo.
+const sora = Sora({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+});
 
 export const metadata: Metadata = {
   title: textos.app.nome,
@@ -37,6 +43,7 @@ export default function RootLayout({
         geistSans.variable,
         geistMono.variable,
         jetbrainsMono.variable,
+        sora.variable,
       )}
     >
       <body className="min-h-full flex flex-col">

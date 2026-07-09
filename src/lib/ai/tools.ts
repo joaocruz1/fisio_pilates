@@ -3,6 +3,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { ragSearch } from "@/lib/ai/rag";
 import { buscarWeb } from "@/lib/ai/tavily";
+import { linksVideoExercicio } from "@/lib/exercicio-videos";
 import { getStudentSnapshot } from "@/server/students";
 
 export type Citacao = { tipo: "kb" | "web"; rotulo: string; ref: string };
@@ -40,7 +41,7 @@ export function buildChatTools({
 
     buscar_ficha_aluno: tool({
       description:
-        "Busca dados de um aluno da própria profissional (ficha, últimas sessões, medidas).",
+        "Busca dados de um aluno da própria profissional (ficha, últimas aulas, medidas).",
       inputSchema: z.object({ nomeOuId: z.string() }),
       execute: async ({ nomeOuId }) => ({ ficha: await getStudentSnapshot({ nomeOuId }) }),
     }),
@@ -55,6 +56,18 @@ export function buildChatTools({
           citations.push({ tipo: "web", rotulo: `WEB-${citations.length + 1}`, ref: w.url });
         }
         return { resultados: web.map((w) => ({ titulo: w.title, url: w.url, texto: w.content })) };
+      },
+    }),
+
+    buscar_video_exercicio: tool({
+      description:
+        "Retorna links de vídeo (YouTube e TikTok) de um exercício de Pilates. Use quando a profissional pedir vídeo, demonstração ou 'como fazer' um exercício. Responda com os links em Markdown.",
+      inputSchema: z.object({
+        nome: z.string().describe("Nome do exercício, ex.: 'Cat Stretch', 'The Hundred'"),
+      }),
+      execute: async ({ nome }) => {
+        const { youtubeSearch, tiktokSearch } = linksVideoExercicio(nome);
+        return { nome, youtube: youtubeSearch, tiktok: tiktokSearch };
       },
     }),
   };

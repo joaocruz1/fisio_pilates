@@ -22,8 +22,12 @@ export async function ragSearch(
   opts: { tenantId: string; k?: number; forcarWeb?: boolean },
 ): Promise<{ kbChunks: KbChunk[]; webResults: WebResult[] }> {
   const supabase = await createClient();
-  const embedding = await gerarEmbedding(query);
 
+  // Quando a web é forçada (ex.: montar aula), dispara a busca web EM PARALELO
+  // com o embedding+match (a web só precisa do texto da query) — economiza ~0.3-1s.
+  const webForcadaPromise = opts.forcarWeb ? buscarWeb(query) : null;
+
+  const embedding = await gerarEmbedding(query);
   const { data } = await supabase.rpc("match_kb_chunks", {
     query_embedding: vetorParaSql(embedding),
     query_text: query,
@@ -44,6 +48,10 @@ export async function ragSearch(
   const fortes = kbChunks.filter((c) => c.similarity > 0.35).length;
   const cobre = top1 >= 0.5 && fortes >= 3;
 
-  const webResults = opts.forcarWeb || !cobre ? await buscarWeb(query) : [];
+  const webResults = webForcadaPromise
+    ? await webForcadaPromise
+    : cobre
+      ? []
+      : await buscarWeb(query);
   return { kbChunks, webResults };
 }

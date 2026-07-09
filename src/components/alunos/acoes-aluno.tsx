@@ -97,7 +97,7 @@ export function AcoesAluno({ id, status }: { id: string; status: string }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir este aluno?</AlertDialogTitle>
             <AlertDialogDescription>
-              Os dados do aluno (avaliações, sessões e documentos) serão removidos. Esta ação faz
+              Os dados do aluno (avaliações, aulas e documentos) serão removidos. Esta ação faz
               parte do fluxo de exclusão da LGPD e não pode ser desfeita pela interface.
             </AlertDialogDescription>
           </AlertDialogHeader>

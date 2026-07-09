@@ -21,7 +21,7 @@ export function HistoricoSessoes({
   async function excluir(id: string) {
     const res = await excluirSessao(id, studentId);
     if (res.ok) {
-      toast.success("Sessão excluída.");
+      toast.success("Aula excluída.");
       router.refresh();
     } else {
       toast.error(res.erro);
@@ -29,7 +29,7 @@ export function HistoricoSessoes({
   }
 
   if (sessoes.length === 0) {
-    return <p className="text-sm text-muted-foreground">Nenhuma sessão registrada ainda.</p>;
+    return <p className="text-sm text-muted-foreground">Nenhuma aula registrada ainda.</p>;
   }
 
   return (
@@ -45,13 +45,13 @@ export function HistoricoSessoes({
               </p>
             </div>
             <ConfirmDialog
-              title="Excluir esta sessão?"
-              description="A sessão e seus exercícios serão removidos do histórico."
+              title="Excluir esta aula?"
+              description="A aula e seus exercícios serão removidos do histórico."
               confirmLabel="Excluir"
               destructive
               onConfirm={() => excluir(s.id)}
               trigger={
-                <Button size="icon" variant="ghost" aria-label="Excluir sessão">
+                <Button size="icon" variant="ghost" aria-label="Excluir aula">
                   <TrashIcon className="size-4" />
                 </Button>
               }

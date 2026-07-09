@@ -29,8 +29,21 @@ const FILTROS: { valor: Filtro; label: string }[] = [
 
 function badgeStatus(status: string) {
   const label = rotuloStatusAluno[status as StatusAluno] ?? status;
-  const variant = status === "active" ? "default" : status === "archived" ? "outline" : "secondary";
+  const variant = status === "active" ? "success" : status === "paused" ? "warning" : "outline";
   return <Badge variant={variant}>{label}</Badge>;
+}
+
+function iniciais(nome: string) {
+  const p = nome.trim().split(/\s+/);
+  return ((p[0]?.[0] ?? "") + (p.length > 1 ? (p[p.length - 1]?.[0] ?? "") : "")).toUpperCase();
+}
+
+function Avatar({ nome }: { nome: string }) {
+  return (
+    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+      {iniciais(nome)}
+    </span>
+  );
 }
 
 function LinkWhats({ phone }: { phone: string | null }) {
@@ -82,7 +95,7 @@ export function ListaAlunos({ alunos }: { alunos: Student[] }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
+        <div data-tour="alunos-busca" className="relative flex-1">
           <MagnifyingGlassIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
@@ -116,9 +129,10 @@ export function ListaAlunos({ alunos }: { alunos: Student[] }) {
               <li key={a.id}>
                 <Link
                   href={`/alunos/${a.id}`}
-                  className="flex items-center justify-between gap-3 rounded-lg border p-3 active:bg-accent"
+                  className="flex items-center gap-3 rounded-xl border bg-card p-3 shadow-sm transition-colors active:bg-accent"
                 >
-                  <div className="min-w-0">
+                  <Avatar nome={a.full_name} />
+                  <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{a.full_name}</p>
                     <p className="text-sm text-muted-foreground">
                       {idadeAnos(a.birth_date) != null ? `${idadeAnos(a.birth_date)} anos` : "—"}
@@ -145,7 +159,11 @@ export function ListaAlunos({ alunos }: { alunos: Student[] }) {
                 {filtrados.map((a) => (
                   <TableRow key={a.id} className={cn(a.status === "archived" && "opacity-60")}>
                     <TableCell>
-                      <Link href={`/alunos/${a.id}`} className="font-medium hover:underline">
+                      <Link
+                        href={`/alunos/${a.id}`}
+                        className="flex items-center gap-2 font-medium hover:text-primary"
+                      >
+                        <Avatar nome={a.full_name} />
                         {a.full_name}
                       </Link>
                     </TableCell>

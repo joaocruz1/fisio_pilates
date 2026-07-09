@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { requireTenant } from "@/server/auth";
+import { listStudents } from "@/server/students";
 
 /**
  * Shell da área logada. `requireTenant()` valida a sessão contra o Auth
@@ -8,5 +9,16 @@ import { requireTenant } from "@/server/auth";
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { profile } = await requireTenant();
-  return <AppShell userName={profile.full_name}>{children}</AppShell>;
+  // Um aluno de exemplo para o tour entrar na ficha (Avaliação/Aulas/Evolução).
+  const alunos = await listStudents();
+  const primeiroAlunoId = alunos[0]?.id ?? null;
+  return (
+    <AppShell
+      userName={profile.full_name}
+      tourPending={!profile.tour_completed_at}
+      primeiroAlunoId={primeiroAlunoId}
+    >
+      {children}
+    </AppShell>
+  );
 }

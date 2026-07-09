@@ -19,12 +19,14 @@ const DOMINIOS = [
 export type WebResult = { title: string; url: string; content: string };
 
 export async function buscarWeb(query: string): Promise<WebResult[]> {
+  const apiKey = env().TAVILY_API_KEY;
+  if (!apiKey) return []; // Tavily não configurado → sem fallback web (não é erro).
   try {
     const res = await fetch("https://api.tavily.com/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        api_key: env().TAVILY_API_KEY,
+        api_key: apiKey,
         query,
         search_depth: "basic",
         max_results: 5,

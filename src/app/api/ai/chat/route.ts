@@ -4,8 +4,10 @@ import { MODELS, openrouter } from "@/lib/ai/client";
 import { chatSystemPrompt } from "@/lib/ai/prompts/chat-assistente";
 import { buildChatTools, type Citacao } from "@/lib/ai/tools";
 import { assertQuota, logUsage, QuotaError } from "@/lib/ai/usage";
+import { type PinnedItem, parsePinned } from "@/lib/chat-pins";
 import { createClient } from "@/lib/supabase/server";
 import { requireTenant } from "@/server/auth";
+import { montarContextoFixado } from "@/server/chat-context";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -19,11 +21,14 @@ function textoDe(msg: UIMessage): string {
 }
 
 export async function POST(req: Request) {
-  const { messages, conversationId, studentId } = (await req.json()) as {
+  const body = (await req.json()) as {
     messages: UIMessage[];
     conversationId?: string;
     studentId?: string;
+    pinned?: PinnedItem[];
   };
+  const { messages, conversationId, studentId } = body;
+  const pinned = parsePinned(body.pinned);
 
   const ctx = await requireTenant();
   const supabase = await createClient();
@@ -46,10 +51,17 @@ export async function POST(req: Request) {
         user_id: ctx.user.id,
         student_id: studentId ?? null,
         title: primeiro.slice(0, 60) || "Nova conversa",
+        pinned_context: pinned as never,
       })
       .select("id")
       .single();
     convId = conv?.id;
+  } else if (pinned.length >= 0) {
+    // Mantém o contexto fixado da conversa sincronizado com o cliente.
+    await supabase
+      .from("chat_conversations")
+      .update({ pinned_context: pinned as never })
+      .eq("id", convId);
   }
 
   // Persiste a mensagem do usuário (última do array).
@@ -66,11 +78,17 @@ export async function POST(req: Request) {
 
   const citations: Citacao[] = [];
   const provider = openrouter();
-  const modelMessages = await convertToModelMessages(messages);
+  const [modelMessages, contextoFixado] = await Promise.all([
+    convertToModelMessages(messages),
+    montarContextoFixado(ctx.tenant.id, pinned),
+  ]);
 
+  // Chat usa o modelo rápido (Haiku); as gerações clínicas (aula/relatório)
+  // seguem no Sonnet-5. O contexto fixado entra no system prompt.
+  const modeloChat = MODELS.cheap();
   const result = streamText({
-    model: provider.chat(MODELS.main()),
-    system: chatSystemPrompt(),
+    model: provider.chat(modeloChat),
+    system: chatSystemPrompt() + contextoFixado,
     messages: modelMessages,
     tools: buildChatTools({ tenantId: ctx.tenant.id, citations }),
     stopWhen: stepCountIs(5),

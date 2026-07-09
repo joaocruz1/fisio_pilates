@@ -80,13 +80,13 @@ export async function getStudentSnapshot({ nomeOuId }: { nomeOuId: string }): Pr
       ? `Condições: ${(condicoes ?? []).map((c) => `${c.name} [${c.status}]`).join("; ")}.`
       : "Sem condições registradas.",
     (sessoes ?? []).length
-      ? `Últimas sessões: ${(sessoes ?? [])
+      ? `Últimas aulas: ${(sessoes ?? [])
           .map(
             (s) =>
               `${s.session_date} (${s.focus ?? "sessão"}, dor ${s.pain_level_pre ?? "—"}→${s.pain_level_post ?? "—"})`,
           )
           .join("; ")}.`
-      : "Sem sessões registradas.",
+      : "Sem aulas registradas.",
     medida?.weight_kg != null
       ? `Última medida: ${medida.weight_kg}kg em ${medida.measured_at}.`
       : "",

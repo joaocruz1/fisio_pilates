@@ -17,11 +17,15 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed px-6 py-12 text-center",
+        "flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed bg-muted/30 px-6 py-12 text-center",
         className,
       )}
     >
-      {IconCmp ? <IconCmp className="size-8 text-muted-foreground" weight="duotone" /> : null}
+      {IconCmp ? (
+        <span className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <IconCmp className="size-7" weight="duotone" />
+        </span>
+      ) : null}
       <div className="flex flex-col gap-1">
         <p className="font-medium">{title}</p>
         {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}

@@ -11,6 +11,44 @@ export type Json = string | number | boolean | null | { [key: string]: Json } | 
 export type Database = {
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          student_id: string;
+          appointment_date: string;
+          start_time: string;
+          duration_min: number;
+          status: string;
+          notes: string | null;
+          series_id: string | null;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          student_id: string;
+          appointment_date: string;
+          start_time: string;
+          duration_min?: number;
+          status?: string;
+          notes?: string | null;
+          series_id?: string | null;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          appointment_date?: string;
+          start_time?: string;
+          duration_min?: number;
+          status?: string;
+          notes?: string | null;
+        };
+        Relationships: [];
+      };
       tenants: {
         Row: {
           id: string;
@@ -58,6 +96,7 @@ export type Database = {
           crefito: string | null;
           avatar_path: string | null;
           onboarding_completed_at: string | null;
+          tour_completed_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -68,6 +107,7 @@ export type Database = {
           crefito?: string | null;
           avatar_path?: string | null;
           onboarding_completed_at?: string | null;
+          tour_completed_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -78,6 +118,7 @@ export type Database = {
           crefito?: string | null;
           avatar_path?: string | null;
           onboarding_completed_at?: string | null;
+          tour_completed_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -352,6 +393,7 @@ export type Database = {
           pain_level_post: number | null;
           focus: string | null;
           notes: string | null;
+          appointment_id: string | null;
           created_by: string;
           created_at: string;
           updated_at: string;
@@ -369,6 +411,7 @@ export type Database = {
           pain_level_post?: number | null;
           focus?: string | null;
           notes?: string | null;
+          appointment_id?: string | null;
           created_by: string;
           created_at?: string;
           updated_at?: string;
@@ -383,6 +426,7 @@ export type Database = {
           pain_level_post?: number | null;
           focus?: string | null;
           notes?: string | null;
+          appointment_id?: string | null;
           deleted_at?: string | null;
         };
         Relationships: [];
@@ -521,6 +565,7 @@ export type Database = {
           author: string | null;
           storage_path: string;
           source_type: string;
+          source_url: string | null;
           license_note: string | null;
           embedding_model: string | null;
           status: string;
@@ -540,6 +585,7 @@ export type Database = {
           author?: string | null;
           storage_path: string;
           source_type?: string;
+          source_url?: string | null;
           license_note?: string | null;
           embedding_model?: string | null;
           status?: string;
@@ -685,6 +731,7 @@ export type Database = {
           user_id: string;
           student_id: string | null;
           title: string | null;
+          pinned_context: Json;
           created_at: string;
           updated_at: string;
         };
@@ -694,12 +741,14 @@ export type Database = {
           user_id: string;
           student_id?: string | null;
           title?: string | null;
+          pinned_context?: Json;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           student_id?: string | null;
           title?: string | null;
+          pinned_context?: Json;
         };
         Relationships: [];
       };

@@ -22,29 +22,29 @@ export async function buildDossie(params: {
   tenantId: string;
   studentId: string;
   period: Periodo;
+  /** Força o complemento de busca web (Tavily) mesmo quando a base local cobre. */
+  forcarWeb?: boolean;
+  /** Dossiê enxuto (menos sessões/docs/trechos) — usado ao montar aula (mais rápido). */
+  compact?: boolean;
+  /** Callback de progresso real (para streaming ao usuário). */
+  onEtapa?: (etapa: "dados" | "base") => void;
 }): Promise<Dossie> {
-  const { tenantId, studentId, period } = params;
+  const { tenantId, studentId, period, compact, onEtapa } = params;
   const supabase = await createClient();
+  onEtapa?.("dados");
 
-  const { data: student } = await supabase
-    .from("students")
-    .select("birth_date, sex, occupation")
-    .eq("id", studentId)
-    .single();
+  // Limites do dossiê. No modo compacto, reduz o input (TTFT/custo) mantendo o
+  // que importa para a decisão: sessões recentes, condições e trechos da base.
+  const LIM = {
+    sessions: compact ? 12 : 40,
+    measurements: compact ? 8 : 24,
+    docs: compact ? 5 : 12,
+    docChars: compact ? 1200 : 2500,
+    kbK: compact ? 6 : 10,
+    kbChars: compact ? 700 : 1000,
+  };
 
-  const { data: conditions } = await supabase
-    .from("student_conditions")
-    .select("name, cid_code, status, severity, notes")
-    .eq("student_id", studentId);
-
-  const { data: assessments } = await supabase
-    .from("assessments")
-    .select("*")
-    .eq("student_id", studentId)
-    .is("deleted_at", null)
-    .order("assessed_at", { ascending: false })
-    .limit(3);
-
+  // Queries com filtro de período (montadas antes do Promise.all).
   let sq = supabase
     .from("sessions")
     .select("id, session_date, duration_min, focus, pain_level_pre, pain_level_post, notes")
@@ -52,8 +52,57 @@ export async function buildDossie(params: {
     .is("deleted_at", null);
   if (period.from) sq = sq.gte("session_date", period.from);
   if (period.to) sq = sq.lte("session_date", period.to);
-  const { data: sessions } = await sq.order("session_date", { ascending: true }).limit(40);
+  const sessionsQuery = sq.order("session_date", { ascending: true }).limit(LIM.sessions);
 
+  let mq = supabase
+    .from("body_measurements")
+    .select("measured_at, weight_kg, circumferences, flexibility")
+    .eq("student_id", studentId);
+  if (period.from) mq = mq.gte("measured_at", period.from);
+  if (period.to) mq = mq.lte("measured_at", period.to);
+  const measurementsQuery = mq.order("measured_at", { ascending: true }).limit(LIM.measurements);
+
+  // 1ª onda: todas as queries independentes em paralelo (~1-3s de ganho).
+  const [
+    { data: student },
+    { data: conditions },
+    { data: assessments },
+    { data: sessions },
+    { data: measurements },
+    { data: docs },
+    { count: fotosCount },
+  ] = await Promise.all([
+    supabase.from("students").select("birth_date, sex, occupation").eq("id", studentId).single(),
+    supabase
+      .from("student_conditions")
+      .select("name, cid_code, status, severity, notes")
+      .eq("student_id", studentId),
+    supabase
+      .from("assessments")
+      .select("*")
+      .eq("student_id", studentId)
+      .is("deleted_at", null)
+      .order("assessed_at", { ascending: false })
+      .limit(3),
+    sessionsQuery,
+    measurementsQuery,
+    supabase
+      .from("documents")
+      .select("kind, extracted_text, taken_at, created_at")
+      .eq("student_id", studentId)
+      .is("deleted_at", null)
+      .not("extracted_text", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(LIM.docs),
+    supabase
+      .from("documents")
+      .select("id", { count: "exact", head: true })
+      .eq("student_id", studentId)
+      .eq("kind", "postural_photo")
+      .is("deleted_at", null),
+  ]);
+
+  // 2ª/3ª ondas: dependem dos ids das sessões.
   const sessionIds = (sessions ?? []).map((s) => s.id);
   const { data: sessionExercises } = sessionIds.length
     ? await supabase
@@ -66,28 +115,6 @@ export async function buildDossie(params: {
     ? await supabase.from("exercises").select("id, name").in("id", exIds)
     : { data: [] };
   const nomeEx = new Map((exs ?? []).map((e) => [e.id, e.name]));
-
-  let mq = supabase
-    .from("body_measurements")
-    .select("measured_at, weight_kg, circumferences, flexibility")
-    .eq("student_id", studentId);
-  if (period.from) mq = mq.gte("measured_at", period.from);
-  if (period.to) mq = mq.lte("measured_at", period.to);
-  const { data: measurements } = await mq.order("measured_at", { ascending: true }).limit(24);
-
-  const { data: docs } = await supabase
-    .from("documents")
-    .select("kind, extracted_text, taken_at")
-    .eq("student_id", studentId)
-    .is("deleted_at", null)
-    .not("extracted_text", "is", null)
-    .limit(5);
-  const { count: fotosCount } = await supabase
-    .from("documents")
-    .select("id", { count: "exact", head: true })
-    .eq("student_id", studentId)
-    .eq("kind", "postural_photo")
-    .is("deleted_at", null);
   const temFotos = (fotosCount ?? 0) > 0;
 
   // --- Blocos do prompt (pseudonimizados) ---
@@ -133,7 +160,7 @@ export async function buildDossie(params: {
   }
   const sessoesLinhas = (sessions ?? []).map((s) => {
     const ex = exercisesBySession.get(s.id) ?? [];
-    return `${s.session_date}: ${s.focus ?? "sessão"}, dor ${s.pain_level_pre ?? "—"}→${s.pain_level_post ?? "—"}. Exercícios: ${ex.join("; ") || "não registrados"}.`;
+    return `${s.session_date}: ${s.focus ?? "aula"}, dor ${s.pain_level_pre ?? "—"}→${s.pain_level_post ?? "—"}. Exercícios: ${ex.join("; ") || "não registrados"}.`;
   });
 
   const medidasLinhas = (measurements ?? []).map((m) => {
@@ -143,24 +170,33 @@ export async function buildDossie(params: {
 
   const docsLinhas = (docs ?? []).map(
     (d) =>
-      `[${d.kind}${d.taken_at ? ` ${d.taken_at}` : ""}] ${(d.extracted_text ?? "").slice(0, 1500)}`,
+      `[${d.kind}${d.taken_at ? ` ${d.taken_at}` : ""}] ${(d.extracted_text ?? "").slice(0, LIM.docChars)}`,
   );
 
-  // --- RAG (query só com termos técnicos) ---
+  // --- RAG (query só com termos técnicos; nunca dados identificáveis do aluno) ---
   const queixa = assessments?.[0]?.main_complaint ?? "";
-  const nomesCond = (conditions ?? []).map((c) => c.name).join(" ");
-  const ragQuery = `${queixa} ${nomesCond} pilates progressão exercícios`.trim();
-  const { kbChunks, webResults } = await ragSearch(ragQuery, { tenantId, k: 8 });
+  const objetivos = (assessments?.[0]?.goals ?? []).join(" ");
+  const nomesCond = (conditions ?? []).map((c) => c.name).join(", ");
+  const ragQuery =
+    `${nomesCond} ${queixa} ${objetivos} pilates exercícios progressão contraindicações segurança`
+      .replace(/\s+/g, " ")
+      .trim();
+  onEtapa?.("base");
+  const { kbChunks, webResults } = await ragSearch(ragQuery, {
+    tenantId,
+    k: LIM.kbK,
+    forcarWeb: params.forcarWeb,
+  });
   const conhecimentoLinhas = [
     ...kbChunks.map(
-      (c, i) => `[KB-${i + 1}] ${c.context_header ?? ""}: ${c.content.slice(0, 800)}`,
+      (c, i) => `[KB-${i + 1}] ${c.context_header ?? ""}: ${c.content.slice(0, LIM.kbChars)}`,
     ),
-    ...webResults.map((w, i) => `[WEB-${i + 1}] ${w.title} (${w.url}): ${w.content.slice(0, 500)}`),
+    ...webResults.map((w, i) => `[WEB-${i + 1}] ${w.title} (${w.url}): ${w.content.slice(0, 600)}`),
   ];
 
   const promptUser = [
     `<ficha>\n${fichaLinhas.join("\n")}\n</ficha>`,
-    `<sessoes>\n${sessoesLinhas.join("\n") || "Sem sessões no período."}\n</sessoes>`,
+    `<aulas>\n${sessoesLinhas.join("\n") || "Sem aulas no período."}\n</aulas>`,
     `<medidas>\n${medidasLinhas.join("\n") || "Sem medidas no período."}\n</medidas>`,
     `<documentos>\n${docsLinhas.join("\n\n") || "Sem documentos com texto."}\n</documentos>`,
     `<conhecimento>\n${conhecimentoLinhas.join("\n\n") || "Sem material relevante na base."}\n</conhecimento>`,

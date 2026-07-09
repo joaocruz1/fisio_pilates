@@ -30,3 +30,16 @@ export const getConversationMessages = cache(
     return data ?? [];
   },
 );
+
+export const getConversation = cache(
+  async (conversationId: string): Promise<Conversation | null> => {
+    await requireTenant();
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("chat_conversations")
+      .select("*")
+      .eq("id", conversationId)
+      .maybeSingle();
+    return data ?? null;
+  },
+);

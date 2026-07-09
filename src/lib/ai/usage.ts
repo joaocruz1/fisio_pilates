@@ -96,6 +96,8 @@ export async function withRetry<T>(fn: () => Promise<T>, tentativas = 3): Promis
 /** Traduz erros do OpenRouter para mensagens pt-BR. */
 export function mapAiError(err: unknown): Error {
   if (err instanceof QuotaError) return err;
+  // Loga o erro cru para diagnóstico (a mensagem amigável esconde a causa real).
+  console.error("[ai] erro do provedor:", err instanceof Error ? (err.stack ?? err.message) : err);
   const status = (err as { statusCode?: number })?.statusCode;
   if (status === 429)
     return new Error("O serviço de IA está sobrecarregado. Tente novamente em instantes.");

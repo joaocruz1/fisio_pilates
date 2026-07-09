@@ -9,7 +9,7 @@ export function AlunoTabs({ base }: { base: string }) {
   const abas = [
     { href: base, label: "Dados" },
     { href: `${base}/avaliacao`, label: "Avaliação" },
-    { href: `${base}/sessoes`, label: "Sessões" },
+    { href: `${base}/sessoes`, label: "Aulas" },
     { href: `${base}/documentos`, label: "Documentos" },
     { href: `${base}/evolucao`, label: "Evolução" },
   ];

@@ -13,9 +13,11 @@ export const textos = {
   nav: {
     inicio: "Início",
     alunos: "Alunos",
+    agenda: "Agenda",
     assistente: "Assistente",
     conhecimento: "Base de Conhecimento",
     configuracoes: "Configurações",
+    ajuda: "Ajuda",
   },
   acoes: {
     salvar: "Salvar",

@@ -37,7 +37,9 @@ export default async function EvolucaoPage({ params }: { params: Promise<{ aluno
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <GraficosEvolucao dor={dor} peso={peso} frequencia={frequencia} />
       <Separator />
-      <RelatoriosIA studentId={alunoId} reports={reports} />
+      <div data-tour="aluno-evolucao">
+        <RelatoriosIA studentId={alunoId} reports={reports} />
+      </div>
       <Separator />
       <MedidasSection studentId={alunoId} medidas={medidas} />
     </div>

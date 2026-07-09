@@ -3,21 +3,24 @@
 // reais do OpenRouter. Idempotente (re-executar substitui o seed anterior).
 // Uso: node --env-file=.env.local scripts/seed-kb.mjs
 import { readdirSync, readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const OR = process.env.OPENROUTER_API_KEY;
 const MODEL = process.env.EMBEDDINGS_MODEL || "openai/text-embedding-3-small";
-if (!URL || !SERVICE || !OR) throw new Error("Faltam envs (Supabase URL/service_role, OpenRouter key)");
+if (!URL || !SERVICE || !OR)
+  throw new Error("Faltam envs (Supabase URL/service_role, OpenRouter key)");
 
 const SEED_TAG = "seed:fisiopilates-v1";
 const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 const SEED_DIR = join(dirname(fileURLToPath(import.meta.url)), "kb-seed");
 
-const admin = createClient(URL, SERVICE, { auth: { persistSession: false, autoRefreshToken: false } });
+const admin = createClient(URL, SERVICE, {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
 
 // --- chunking (espelha src/server/services/chunking.ts) ---
 function chunkText(text, { maxChars = 2800, overlap = 300 } = {}) {
@@ -76,7 +79,9 @@ const vetor = (v) => `[${v.join(",")}]`;
 // --- idempotência: remove o seed anterior (cascade limpa os chunks) ---
 await admin.from("kb_documents").delete().eq("scope", "global").eq("license_note", SEED_TAG);
 
-const files = readdirSync(SEED_DIR).filter((f) => f.endsWith(".md")).sort();
+const files = readdirSync(SEED_DIR)
+  .filter((f) => f.endsWith(".md"))
+  .sort();
 if (files.length === 0) throw new Error(`Nenhum .md em ${SEED_DIR}`);
 
 let totalChunks = 0;

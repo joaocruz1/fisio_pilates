@@ -8,6 +8,16 @@ import { z } from "zod";
  * `env()` dentro de funções de servidor (clients Supabase, rotas de IA/ingestão)
  * — nunca no topo de módulos de UI.
  */
+/**
+ * String opcional de integração: trata "" (variável presente porém vazia no
+ * `.env`) como ausente. Assim, integrações não provisionadas (QStash/Tavily)
+ * NÃO derrubam a validação global e, com ela, features de IA que nem as usam.
+ */
+const optionalIntegrationString = z
+  .string()
+  .optional()
+  .transform((v) => (v?.trim() ? v : undefined));
+
 const serverSchema = z.object({
   APP_URL: z.string().url().default("http://localhost:3000"),
 
@@ -23,11 +33,20 @@ const serverSchema = z.object({
   EMBEDDINGS_MODEL: z.string().default("openai/text-embedding-3-small"),
   EMBEDDINGS_DIM: z.coerce.number().int().positive().default(1536),
 
-  QSTASH_TOKEN: z.string().min(1),
-  QSTASH_CURRENT_SIGNING_KEY: z.string().min(1),
-  QSTASH_NEXT_SIGNING_KEY: z.string().min(1),
+  // Integrações OPCIONAIS. Só são necessárias para a fila de ingestão da KB
+  // (QStash) e o fallback de busca web (Tavily). A ausência é validada nos
+  // pontos que realmente as usam (ver src/lib/qstash.ts e src/lib/ai/tavily.ts),
+  // nunca aqui de forma global.
+  QSTASH_TOKEN: optionalIntegrationString,
+  QSTASH_CURRENT_SIGNING_KEY: optionalIntegrationString,
+  QSTASH_NEXT_SIGNING_KEY: optionalIntegrationString,
 
-  TAVILY_API_KEY: z.string().min(1),
+  TAVILY_API_KEY: optionalIntegrationString,
+
+  // Opcional: habilita reproduzir o vídeo do exercício DENTRO do app (resolve o
+  // 1º resultado da busca via YouTube Data API). Sem a chave, o app abre a busca
+  // no YouTube/TikTok em nova aba (o embed por busca do YouTube foi descontinuado).
+  YOUTUBE_API_KEY: optionalIntegrationString,
 });
 
 export type ServerEnv = z.infer<typeof serverSchema>;

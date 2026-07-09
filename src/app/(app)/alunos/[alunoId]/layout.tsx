@@ -1,6 +1,9 @@
+import { UploadSimpleIcon } from "@phosphor-icons/react/ssr";
 import { AcoesAluno } from "@/components/alunos/acoes-aluno";
 import { AlunoTabs } from "@/components/alunos/aluno-tabs";
+import { UploadDocumento } from "@/components/documentos/upload-documento";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { rotuloStatusAluno, type StatusAluno } from "@/lib/labels";
 import { idadeAnos, linkWhatsApp } from "@/lib/utils";
 import { getStudent } from "@/server/students";
@@ -50,10 +53,23 @@ export default async function AlunoLayout({
             ) : null}
           </p>
         </div>
-        <AcoesAluno id={aluno.id} status={aluno.status} />
+        <div className="flex shrink-0 items-center gap-2">
+          <UploadDocumento
+            studentId={alunoId}
+            title="Importar aulas e documentos"
+            trigger={
+              <Button size="sm" variant="outline">
+                <UploadSimpleIcon className="size-4" /> Importar
+              </Button>
+            }
+          />
+          <AcoesAluno id={aluno.id} status={aluno.status} />
+        </div>
       </div>
 
-      <AlunoTabs base={`/alunos/${alunoId}`} />
+      <div data-tour="aluno-abas">
+        <AlunoTabs base={`/alunos/${alunoId}`} />
+      </div>
       {children}
     </div>
   );

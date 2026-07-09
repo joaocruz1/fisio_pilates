@@ -11,7 +11,7 @@ export default async function AlunosPage() {
   return (
     <>
       <PageHeader title="Alunos" description="Sua carteira de alunos.">
-        <Button asChild>
+        <Button asChild data-tour="alunos-novo">
           <Link href="/alunos/novo">Novo aluno</Link>
         </Button>
       </PageHeader>

@@ -4,14 +4,17 @@ import { createClient } from "@supabase/supabase-js";
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!URL || !SERVICE) throw new Error("Faltam NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY");
+if (!URL || !SERVICE)
+  throw new Error("Faltam NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY");
 
 const EMAIL = "rhenata@gmail.com";
 const PASSWORD = "rhesiqueira123";
 const NOME = "Rhenata Siqueira";
 const ESTUDIO = "Studio Rhenata";
 
-const admin = createClient(URL, SERVICE, { auth: { persistSession: false, autoRefreshToken: false } });
+const admin = createClient(URL, SERVICE, {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
 
 async function findUser(email) {
   for (let page = 1; ; page++) {
@@ -59,4 +62,6 @@ if (member?.tenant_id) {
   await admin.from("tenants").update({ name: ESTUDIO }).eq("id", member.tenant_id);
 }
 
-console.log(`\n✅ Pronto. Login: ${EMAIL} / ${PASSWORD} (onboarding concluído, estúdio "${ESTUDIO}").`);
+console.log(
+  `\n✅ Pronto. Login: ${EMAIL} / ${PASSWORD} (onboarding concluído, estúdio "${ESTUDIO}").`,
+);

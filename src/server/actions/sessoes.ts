@@ -14,6 +14,7 @@ const nn = (v?: string | null) => {
 export async function criarSessao(
   studentId: string,
   input: SessaoInput,
+  appointmentId?: string | null,
 ): Promise<ActionResult<{ id: string }>> {
   const ctx = await requireTenant();
   const p = sessaoSchema.safeParse(input);
@@ -34,6 +35,7 @@ export async function criarSessao(
       pain_level_post: d.painLevelPost ?? null,
       focus: nn(d.focus),
       notes: nn(d.notes),
+      appointment_id: appointmentId ?? null,
     })
     .select("id")
     .single();
@@ -59,6 +61,12 @@ export async function criarSessao(
       await supabase.from("sessions").delete().eq("id", sessao.id);
       return { ok: false, erro: "Não foi possível salvar os exercícios da sessão." };
     }
+  }
+
+  // Vincula ao agendamento: marca como realizado.
+  if (appointmentId) {
+    await supabase.from("appointments").update({ status: "completed" }).eq("id", appointmentId);
+    revalidatePath("/agenda");
   }
 
   revalidatePath(`/alunos/${studentId}/sessoes`);
