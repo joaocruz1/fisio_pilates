@@ -58,6 +58,13 @@ export type Database = {
           status: string;
           ai_monthly_limit_usd: number;
           settings: Json;
+          stripe_customer_id: string | null;
+          stripe_subscription_id: string | null;
+          current_period_start: string | null;
+          current_period_end: string | null;
+          trial_ends_at: string | null;
+          cancel_at_period_end: boolean;
+          canceled_at: string | null;
           created_at: string;
           updated_at: string;
           deleted_at: string | null;
@@ -70,6 +77,13 @@ export type Database = {
           status?: string;
           ai_monthly_limit_usd?: number;
           settings?: Json;
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
+          current_period_start?: string | null;
+          current_period_end?: string | null;
+          trial_ends_at?: string | null;
+          cancel_at_period_end?: boolean;
+          canceled_at?: string | null;
           created_at?: string;
           updated_at?: string;
           deleted_at?: string | null;
@@ -82,6 +96,13 @@ export type Database = {
           status?: string;
           ai_monthly_limit_usd?: number;
           settings?: Json;
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
+          current_period_start?: string | null;
+          current_period_end?: string | null;
+          trial_ends_at?: string | null;
+          cancel_at_period_end?: boolean;
+          canceled_at?: string | null;
           created_at?: string;
           updated_at?: string;
           deleted_at?: string | null;
@@ -92,6 +113,7 @@ export type Database = {
         Row: {
           id: string;
           full_name: string;
+          email: string | null;
           phone: string | null;
           crefito: string | null;
           avatar_path: string | null;
@@ -103,6 +125,7 @@ export type Database = {
         Insert: {
           id: string;
           full_name: string;
+          email?: string | null;
           phone?: string | null;
           crefito?: string | null;
           avatar_path?: string | null;
@@ -114,6 +137,7 @@ export type Database = {
         Update: {
           id?: string;
           full_name?: string;
+          email?: string | null;
           phone?: string | null;
           crefito?: string | null;
           avatar_path?: string | null;
@@ -213,7 +237,7 @@ export type Database = {
       audit_logs: {
         Row: {
           id: number;
-          tenant_id: string;
+          tenant_id: string | null;
           user_id: string | null;
           action: string;
           entity_type: string;
@@ -223,7 +247,7 @@ export type Database = {
         };
         Insert: {
           id?: never;
-          tenant_id: string;
+          tenant_id?: string | null;
           user_id?: string | null;
           action: string;
           entity_type: string;
@@ -776,6 +800,177 @@ export type Database = {
           created_at?: string;
         };
         Update: never;
+        Relationships: [];
+      };
+      subscriptions: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          stripe_subscription_id: string;
+          stripe_customer_id: string;
+          plan: string;
+          status: string;
+          current_period_start: string | null;
+          current_period_end: string | null;
+          cancel_at_period_end: boolean;
+          canceled_at: string | null;
+          trial_start: string | null;
+          trial_end: string | null;
+          metadata: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          stripe_subscription_id: string;
+          stripe_customer_id: string;
+          plan: string;
+          status: string;
+          current_period_start?: string | null;
+          current_period_end?: string | null;
+          cancel_at_period_end?: boolean;
+          canceled_at?: string | null;
+          trial_start?: string | null;
+          trial_end?: string | null;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          stripe_subscription_id?: string;
+          stripe_customer_id?: string;
+          plan?: string;
+          status?: string;
+          current_period_start?: string | null;
+          current_period_end?: string | null;
+          cancel_at_period_end?: boolean;
+          canceled_at?: string | null;
+          trial_start?: string | null;
+          trial_end?: string | null;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      invoices: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          stripe_invoice_id: string;
+          stripe_subscription_id: string | null;
+          amount_cents: number;
+          currency: string;
+          status: string;
+          hosted_invoice_url: string | null;
+          invoice_pdf_url: string | null;
+          period_start: string | null;
+          period_end: string | null;
+          paid_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          stripe_invoice_id: string;
+          stripe_subscription_id?: string | null;
+          amount_cents: number;
+          currency?: string;
+          status: string;
+          hosted_invoice_url?: string | null;
+          invoice_pdf_url?: string | null;
+          period_start?: string | null;
+          period_end?: string | null;
+          paid_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          stripe_invoice_id?: string;
+          stripe_subscription_id?: string | null;
+          amount_cents?: number;
+          currency?: string;
+          status?: string;
+          hosted_invoice_url?: string | null;
+          invoice_pdf_url?: string | null;
+          period_start?: string | null;
+          period_end?: string | null;
+          paid_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      usage_records: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          subscription_id: string | null;
+          kind: string;
+          quantity: number;
+          stripe_subscription_item_id: string | null;
+          stripe_usage_record_id: string | null;
+          period_start: string;
+          period_end: string;
+          recorded_to_stripe: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          subscription_id?: string | null;
+          kind: string;
+          quantity?: number;
+          stripe_subscription_item_id?: string | null;
+          stripe_usage_record_id?: string | null;
+          period_start: string;
+          period_end: string;
+          recorded_to_stripe?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          subscription_id?: string | null;
+          kind?: string;
+          quantity?: number;
+          stripe_subscription_item_id?: string | null;
+          stripe_usage_record_id?: string | null;
+          period_start?: string;
+          period_end?: string;
+          recorded_to_stripe?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      stripe_events: {
+        Row: {
+          id: string;
+          type: string;
+          processed_at: string;
+          payload: Json;
+        };
+        Insert: {
+          id: string;
+          type: string;
+          processed_at?: string;
+          payload: Json;
+        };
+        Update: {
+          id?: string;
+          type?: string;
+          processed_at?: string;
+          payload?: Json;
+        };
+        Relationships: [];
+      };
+      admin_users: {
+        Row: { id: string; role: string; created_at: string };
+        Insert: { id: string; role: string; created_at?: string };
+        Update: { id?: string; role?: string; created_at?: string };
         Relationships: [];
       };
     };

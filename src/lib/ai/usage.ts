@@ -1,4 +1,6 @@
 import "server-only";
+import { type UsageKind as MetredKind, registrarUso } from "@/lib/billing/usage";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 /** Preços por milhão de tokens (USD, preço cheio — C13). */
@@ -57,7 +59,7 @@ type UsageLike = {
 export async function logUsage(params: {
   tenantId: string;
   userId: string | null;
-  kind: "report" | "chat" | "embedding" | "multi_query";
+  kind: "report" | "chat" | "embedding" | "multi_query" | "vision";
   model: string;
   usage: UsageLike;
   metadata?: Record<string, unknown>;
@@ -75,6 +77,62 @@ export async function logUsage(params: {
     cost_usd: custoUsd(params.model, inputTokens, outputTokens),
     metadata: (params.metadata ?? {}) as never,
   });
+
+  // B20: integra com o meter Stripe quando aplicável.
+  await registrarUsoMedido(params.tenantId, params.kind);
+}
+
+async function registrarUsoMedido(
+  tenantId: string,
+  kind: "report" | "chat" | "embedding" | "multi_query" | "vision",
+): Promise<void> {
+  const metredKind: MetredKind | null =
+    kind === "chat"
+      ? "chat_message"
+      : kind === "report"
+        ? "ai_report"
+        : kind === "vision"
+          ? "vision_photo"
+          : null;
+  if (!metredKind) return;
+
+  const admin = createAdminClient();
+  const { data: tenant } = await admin
+    .from("tenants")
+    .select("stripe_subscription_id, current_period_start, current_period_end")
+    .eq("id", tenantId)
+    .single();
+  if (!tenant?.stripe_subscription_id) return;
+  if (!tenant.current_period_start || !tenant.current_period_end) return;
+
+  // Heurística: o subscription_item_id é fixo por assinatura; cacheamos no
+  // payload da próxima fatura. Para evitar lookup no Stripe a cada log,
+  // confiamos em `tenants.stripe_subscription_id` e no `subscriptions.items`.
+  try {
+    const { data: sub } = await admin
+      .from("subscriptions")
+      .select("metadata")
+      .eq("stripe_subscription_id", tenant.stripe_subscription_id)
+      .single();
+    const itemId =
+      (sub?.metadata as { items?: { chat?: string; report?: string; vision?: string } } | null)
+        ?.items?.[
+        metredKind === "chat_message" ? "chat" : metredKind === "ai_report" ? "report" : "vision"
+      ] ?? null;
+    if (!itemId) return; // sem item metered; plano não cobra overage
+    await registrarUso({
+      tenantId,
+      subscriptionId: tenant.stripe_subscription_id,
+      kind: metredKind,
+      quantity: 1,
+      stripeSubscriptionItemId: itemId,
+      periodStart: new Date(tenant.current_period_start),
+      periodEnd: new Date(tenant.current_period_end),
+    });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("[billing] registrarUso medido falhou:", err);
+  }
 }
 
 /** Retry com backoff exponencial para erros transitórios do provedor. */

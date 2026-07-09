@@ -36,7 +36,7 @@ export default async function ImprimirRelatorioPage({
 }) {
   const { reportId } = await params;
   const [{ tenant }, report] = await Promise.all([requireTenant(), getReport(reportId)]);
-  if (!report || report.status !== "completed" || !report.structured) notFound();
+  if (report?.status !== "completed" || !report.structured) notFound();
 
   const aluno = await getStudent(report.student_id);
   const r = report.structured as unknown as Relatorio;
