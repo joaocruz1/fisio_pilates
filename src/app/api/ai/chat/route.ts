@@ -1,6 +1,8 @@
 import { convertToModelMessages, stepCountIs, streamText, type UIMessage } from "ai";
 import { NextResponse } from "next/server";
-import { MODELS, openrouter } from "@/lib/ai/client";
+import { openrouter } from "@/lib/ai/client";
+import { suportaFeature } from "@/lib/ai/modelos";
+import { getModeloParaFeature } from "@/lib/ai/preferencias";
 import { chatSystemPrompt } from "@/lib/ai/prompts/chat-assistente";
 import { buildChatTools, type Citacao } from "@/lib/ai/tools";
 import { assertQuota, logUsage, QuotaError } from "@/lib/ai/usage";
@@ -26,8 +28,10 @@ export async function POST(req: Request) {
     conversationId?: string;
     studentId?: string;
     pinned?: PinnedItem[];
+    /** Override por conversa (vem do ModeloPicker no header do chat). */
+    model?: string;
   };
-  const { messages, conversationId, studentId } = body;
+  const { messages, conversationId, studentId, model: modelOverride } = body;
   const pinned = parsePinned(body.pinned);
 
   const ctx = await requireTenant();
@@ -40,7 +44,14 @@ export async function POST(req: Request) {
     throw e;
   }
 
-  // Resolve ou cria a conversa.
+  // Resolve o modelo: override da conversa > preferência da usuária.
+  // Validação: se override não suporta chat, ignora silenciosamente.
+  let modeloChat = await getModeloParaFeature(ctx.user.id, "chat");
+  if (modelOverride && suportaFeature(modelOverride, "chat")) {
+    modeloChat = modelOverride;
+  }
+
+  // Persiste a mensagem do usuário (última do array).
   let convId = conversationId;
   if (!convId) {
     const primeiro = textoDe(messages[messages.length - 1] ?? ({} as UIMessage));
@@ -83,9 +94,9 @@ export async function POST(req: Request) {
     montarContextoFixado(ctx.tenant.id, pinned),
   ]);
 
-  // Chat usa o modelo rápido (Haiku); as gerações clínicas (aula/relatório)
-  // seguem no Sonnet-5. O contexto fixado entra no system prompt.
-  const modeloChat = MODELS.cheap();
+  // Chat usa o modelo resolvido por preferência/override; as gerações
+  // clínicas (aula/relatório) seguem na preferência de relatório. O
+  // contexto fixado entra no system prompt.
   const result = streamText({
     model: provider.chat(modeloChat),
     system: chatSystemPrompt() + contextoFixado,
@@ -104,13 +115,18 @@ export async function POST(req: Request) {
           usage: usage as never,
         });
       }
+      // Log com o MESMO modelo que gerou (modeloChat) — antes era MODELS.main()
+      // enquanto a geração usava MODELS.cheap(). Bug latente consertado.
       await logUsage({
         tenantId: ctx.tenant.id,
         userId: ctx.user.id,
         kind: "chat",
-        model: MODELS.main(),
+        model: modeloChat,
         usage,
-        metadata: { conversationId: convId },
+        metadata: {
+          conversationId: convId,
+          modelSource: modelOverride ? "override" : "preference",
+        },
       });
     },
   });

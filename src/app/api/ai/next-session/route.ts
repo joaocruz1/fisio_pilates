@@ -1,7 +1,8 @@
 import { streamObject } from "ai";
 import { NextResponse } from "next/server";
-import { MODELS, openrouter } from "@/lib/ai/client";
+import { openrouter } from "@/lib/ai/client";
 import { buildDossie } from "@/lib/ai/dossie";
+import { getModeloParaFeature } from "@/lib/ai/preferencias";
 import { proximaAulaSystemPrompt } from "@/lib/ai/prompts/proxima-aula";
 import { planoAulaSchema } from "@/lib/ai/schemas/plano-aula";
 import { assertQuota, logUsage, mapAiError, QuotaError } from "@/lib/ai/usage";
@@ -29,6 +30,9 @@ export async function POST(req: Request) {
   const ctx = await requireTenant();
   const supabase = await createClient();
   const studentId = body.studentId;
+
+  // Resolve o modelo uma vez (reutilizado na inserção, na geração e no log).
+  const modeloProximaAula = await getModeloParaFeature(ctx.user.id, "relatorio");
 
   try {
     await assertQuota(ctx.tenant.id);
@@ -85,7 +89,7 @@ export async function POST(req: Request) {
             period_end: period.to,
             input_hash: dossie.inputHash,
             status: "processing",
-            model: MODELS.cheap(),
+            model: modeloProximaAula,
             input_snapshot: dossie.snapshot as never,
             requested_by: ctx.user.id,
           })
@@ -123,8 +127,9 @@ export async function POST(req: Request) {
         // --- Geração streaming: o plano é montado ao vivo ---
         send({ type: "stage", stage: "gerando" });
         const provider = openrouter();
+        // Usa o modelo resolvido antes (preferência `relatorio` da usuária).
         const result = streamObject({
-          model: provider.chat(MODELS.cheap()),
+          model: provider.chat(modeloProximaAula),
           schema: planoAulaSchema,
           system: proximaAulaSystemPrompt(),
           prompt,
@@ -157,7 +162,7 @@ export async function POST(req: Request) {
           tenantId: ctx.tenant.id,
           userId: ctx.user.id,
           kind: "report",
-          model: MODELS.cheap(),
+          model: modeloProximaAula,
           usage,
           metadata: { reportId, feature: "next_session" },
         });

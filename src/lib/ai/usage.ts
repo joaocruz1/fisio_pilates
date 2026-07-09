@@ -1,19 +1,18 @@
 import "server-only";
+import { precosDoModelo } from "@/lib/ai/modelos";
 import { type UsageKind as MetredKind, registrarUso } from "@/lib/billing/usage";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-/** Preços por milhão de tokens (USD, preço cheio — C13). */
-const PRECOS: Record<string, { in: number; out: number }> = {
-  "anthropic/claude-sonnet-5": { in: 3, out: 15 },
-  "anthropic/claude-sonnet-4.6": { in: 3, out: 15 },
-  "anthropic/claude-haiku-4.5": { in: 1, out: 5 },
-  "openai/text-embedding-3-small": { in: 0.02, out: 0 },
-};
-
+/**
+ * Custo de uma chamada (USD). Preços vivem em `src/lib/ai/modelos.ts` —
+ * a tabela de lá inclui Sonnet 5/4.6, Haiku 4.5, DeepSeek V3, Gemini Flash
+ * e o modelo de embeddings. Slugs desconhecidos caem no preço do
+ * `MODELS.main()` com warning.
+ */
 export function custoUsd(model: string, inputTokens: number, outputTokens: number): number {
-  const p = PRECOS[model] ?? { in: 3, out: 15 };
-  return (inputTokens / 1e6) * p.in + (outputTokens / 1e6) * p.out;
+  const p = precosDoModelo(model);
+  return (inputTokens / 1e6) * p.input + (outputTokens / 1e6) * p.output;
 }
 
 export class QuotaError extends Error {

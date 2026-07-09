@@ -973,6 +973,33 @@ export type Database = {
         Update: { id?: string; role?: string; created_at?: string };
         Relationships: [];
       };
+      user_ai_preferences: {
+        Row: {
+          user_id: string;
+          chat_model: Database["public"]["Enums"]["ai_nivel"];
+          report_model: Database["public"]["Enums"]["ai_nivel"];
+          vision_model: Database["public"]["Enums"]["ai_nivel"];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          chat_model?: Database["public"]["Enums"]["ai_nivel"];
+          report_model?: Database["public"]["Enums"]["ai_nivel"];
+          vision_model?: Database["public"]["Enums"]["ai_nivel"];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          chat_model?: Database["public"]["Enums"]["ai_nivel"];
+          report_model?: Database["public"]["Enums"]["ai_nivel"];
+          vision_model?: Database["public"]["Enums"]["ai_nivel"];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -997,7 +1024,9 @@ export type Database = {
         }[];
       };
     };
-    Enums: Record<string, never>;
+    Enums: {
+      ai_nivel: "economico" | "balanceado" | "alta_precisao";
+    };
     CompositeTypes: Record<string, never>;
   };
 };

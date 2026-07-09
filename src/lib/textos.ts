@@ -166,6 +166,73 @@ export const textos = {
       acaoFalhou: "A ação falhou. Verifique o log de auditoria.",
     },
   },
+  modelo: {
+    titulo: "Qualidade da IA",
+    descricao:
+      "Escolha o nível de qualidade para cada recurso. O modo mais rápido gasta menos, o mais preciso gasta mais. Você pode mudar a qualquer momento.",
+    badge: "IA",
+    niveis: {
+      economico: {
+        label: "Mais rápido",
+        desc: "Respostas ágeis, menor custo por uso. Ótimo para o dia a dia.",
+        custo: "Menor custo",
+        icone: "leve",
+      },
+      balanceado: {
+        label: "Equilibrado",
+        desc: "O melhor dos dois mundos para a maioria das tarefas.",
+        custo: "Custo moderado",
+        icone: "medio",
+      },
+      alta_precisao: {
+        label: "Mais preciso",
+        desc: "Máxima qualidade. Recomendado para casos clínicos sensíveis.",
+        custo: "Maior custo",
+        icone: "alto",
+      },
+    },
+    campos: {
+      chat: {
+        label: "Assistente de chat",
+        ajuda: "Respostas no chat da assistente.",
+      },
+      report: {
+        label: "Relatórios e planos de aula",
+        ajuda: "Relatórios de evolução e plano da próxima aula.",
+      },
+      vision: {
+        label: "Análise de fotos",
+        ajuda: "Imagens posturais, exames e documentos escaneados.",
+      },
+    },
+    picker: {
+      placeholder: "Padrão",
+      hint: "Usa o nível salvo em Configurações",
+    },
+    eixos: {
+      velocidade: {
+        label: "Velocidade",
+        ajuda: "Quanto maior, mais rápido responde (e mais barato).",
+        niveis: {
+          1: "Lento",
+          2: "Normal",
+          3: "Rápido",
+        },
+      },
+      precisao: {
+        label: "Precisão",
+        ajuda: "Quanto maior, mais cuidadosa é a resposta.",
+        niveis: {
+          1: "Básica",
+          2: "Boa",
+          3: "Alta",
+        },
+      },
+    },
+    erros: {
+      salvar: "Não foi possível salvar suas preferências.",
+    },
+  },
 } as const;
 
 export type Textos = typeof textos;
