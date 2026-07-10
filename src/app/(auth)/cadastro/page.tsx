@@ -1,4 +1,5 @@
 import { CadastroForm } from "@/components/auth/cadastro-form";
+import { PlanHint } from "@/components/auth/plan-hint";
 
 export const metadata = { title: "Criar conta" };
 
@@ -9,6 +10,7 @@ export default function CadastroPage() {
         <h1 className="text-xl font-semibold">Criar conta</h1>
         <p className="text-sm text-muted-foreground">Comece a organizar seus alunos.</p>
       </div>
+      <PlanHint />
       <CadastroForm />
     </div>
   );

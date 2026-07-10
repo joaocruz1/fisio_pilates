@@ -1,37 +1,48 @@
-import Image from "next/image";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { textos } from "@/lib/textos";
+import { ComparativoPublic } from "@/components/landing/comparativo-public";
+import { FAQ } from "@/components/landing/faq";
+import { FeatureDetail } from "@/components/landing/feature-detail";
+import { FeaturesGrid } from "@/components/landing/features-grid";
+import { FinalCTA } from "@/components/landing/final-cta";
+import { Hero } from "@/components/landing/hero";
+import { HowItWorks } from "@/components/landing/how-it-works";
+import { NavPublic } from "@/components/landing/nav-public";
+import { SiteFooter } from "@/components/landing/site-footer";
+import { SocialProof } from "@/components/landing/social-proof";
+import { Testimonials } from "@/components/landing/testimonials";
 
+/**
+ * Landing pública do FisioPilates. Renderizada como RSC: tudo é server-rendered
+ * exceto a cena 3D do hero, que é client-only via `dynamic({ ssr: false })`.
+ *
+ * Seções (em ordem):
+ *   1. NavPublic (client)               — fixa, transparente → sólida
+ *   2. Hero (client)                    — copy + cena 3D R3F
+ *   3. SocialProof                      — strip de selos LGPD/Brasil
+ *   4. FeaturesGrid                     — 9 features em 3×3
+ *   5. FeatureDetail                    — 3 blocos detalhados
+ *   6. HowItWorks                       — 4 passos numerados
+ *   7. ComparativoPublic                — 5 planos (Free + 4 pagos)
+ *   8. Testimonials                     — 3 personas ilustrativas
+ *   9. FAQ                              — accordion com 8 perguntas
+ *  10. FinalCTA                         — banner de fechamento
+ *  11. SiteFooter                       — 4 colunas institucionais
+ */
 export default function Home() {
   return (
-    <main className="relative flex min-h-svh flex-col items-center justify-center gap-8 overflow-hidden p-8 text-center">
-      <span className="pointer-events-none absolute -top-24 right-1/4 size-72 rounded-full bg-primary/10 blur-3xl" />
-      <span className="pointer-events-none absolute bottom-0 left-1/4 size-72 rounded-full bg-accent/40 blur-3xl" />
-
-      <div className="relative z-10 flex flex-col items-center gap-5">
-        <Image
-          src="/logo.png"
-          alt={textos.app.nome}
-          width={96}
-          height={96}
-          priority
-          className="size-24 rounded-3xl shadow-lg shadow-primary/20"
-        />
-        <h1 className="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
-          <span className="text-brand-gradient">{textos.app.nome}</span>
-        </h1>
-        <p className="max-w-md text-lg text-muted-foreground">{textos.app.tagline}</p>
-      </div>
-
-      <div className="relative z-10 flex gap-3">
-        <Button asChild size="lg">
-          <Link href="/cadastro">Criar conta</Link>
-        </Button>
-        <Button asChild size="lg" variant="outline">
-          <Link href="/login">Entrar</Link>
-        </Button>
-      </div>
-    </main>
+    <>
+      <NavPublic />
+      <main className="relative flex min-h-svh flex-col">
+        <Hero />
+        <SocialProof />
+        <FeaturesGrid />
+        <FeatureDetail />
+        <HowItWorks />
+        <ComparativoPublic />
+        <Testimonials />
+        <FAQ />
+        <FinalCTA />
+      </main>
+      <SiteFooter />
+    </>
   );
 }
