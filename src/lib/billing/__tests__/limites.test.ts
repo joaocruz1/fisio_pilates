@@ -62,9 +62,10 @@ type FakeBuilder = {
   maybeSingle: () => Promise<{ data: unknown; error: null }>;
 };
 
-// biome-ignore lint/suspicious/noThenProperty: simulando Postgrest builder
 type ThenableBuilder = FakeBuilder & {
-  then: <T>(resolve: (v: { data: unknown[]; count: number | null; error: null }) => T) => Promise<T>;
+  then: <T>(
+    resolve: (v: { data: unknown[]; count: number | null; error: null }) => T,
+  ) => Promise<T>;
 };
 
 function makeBuilder(rows: unknown[], count: number | null): ThenableBuilder {
@@ -76,6 +77,7 @@ function makeBuilder(rows: unknown[], count: number | null): ThenableBuilder {
     in: () => b,
     single: async () => ({ data: rows[0] ?? null, error: null }),
     maybeSingle: async () => ({ data: rows[0] ?? null, error: null }),
+    // biome-ignore lint/suspicious/noThenProperty: simulando Postgrest builder
     then: (resolve) => Promise.resolve({ data: rows, count, error: null }).then(resolve),
   };
   return b;

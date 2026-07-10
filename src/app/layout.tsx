@@ -25,8 +25,42 @@ const sora = Sora({
 });
 
 export const metadata: Metadata = {
-  title: textos.app.nome,
-  description: textos.app.tagline,
+  title: {
+    default: `${textos.app.nome} · ${textos.app.tagline}`,
+    template: `%s · ${textos.app.nome}`,
+  },
+  description: textos.landing.hero.sub,
+  applicationName: textos.app.nome,
+  keywords: [
+    "fisioterapia",
+    "pilates",
+    "gestão de alunos",
+    "relatório de evolução",
+    "inteligência artificial",
+    "LGPD",
+    "RAG",
+    "fisioterapeuta autônoma",
+  ],
+  authors: [{ name: textos.app.nome }],
+  creator: textos.app.nome,
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    url: "/",
+    siteName: textos.app.nome,
+    title: `${textos.app.nome} · ${textos.app.tagline}`,
+    description: textos.landing.hero.sub,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${textos.app.nome} · ${textos.app.tagline}`,
+    description: textos.landing.hero.sub,
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

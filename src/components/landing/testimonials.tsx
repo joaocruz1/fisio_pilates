@@ -1,0 +1,85 @@
+import { QuotesIcon } from "@phosphor-icons/react/dist/ssr";
+import { Reveal, StaggerItem, StaggerList } from "@/components/motion";
+import { Card, CardContent } from "@/components/ui/card";
+import { textos } from "@/lib/textos";
+import { cn } from "@/lib/utils";
+
+const GRADIENTS = [
+  "from-primary to-accent",
+  "from-info to-primary",
+  "from-success to-accent",
+] as const;
+
+function initials(nome: string) {
+  return nome
+    .replace(/Dra?\.\s*/i, "")
+    .split(" ")
+    .slice(0, 2)
+    .map((n) => n[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+export function Testimonials() {
+  return (
+    <section className="bg-background py-20 sm:py-28">
+      <div className="mx-auto max-w-[1400px] px-6 sm:px-10 lg:px-16">
+        <Reveal>
+          <div className="mb-12 flex flex-col items-center gap-3 text-center sm:mb-16">
+            <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium uppercase tracking-wider text-primary">
+              {textos.landing.testimonials.eyebrow}
+            </span>
+            <h2 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+              {textos.landing.testimonials.titulo}
+            </h2>
+            <p className="max-w-2xl text-base text-muted-foreground sm:text-lg">
+              {textos.landing.testimonials.subtitulo}
+            </p>
+          </div>
+        </Reveal>
+
+        <StaggerList className="grid gap-4 md:grid-cols-3">
+          {textos.landing.testimonials.items.map((t, i) => (
+            <StaggerItem
+              // biome-ignore lint/suspicious/noArrayIndexKey: lista estática
+              key={i}
+              className="h-full"
+            >
+              <Card className="relative h-full overflow-hidden border-border/60">
+                <QuotesIcon
+                  weight="fill"
+                  className="pointer-events-none absolute -top-2 -right-2 size-20 text-primary/5"
+                  aria-hidden
+                />
+                <CardContent className="flex h-full flex-col gap-5 p-6">
+                  <p className="relative text-sm leading-relaxed text-foreground/85 sm:text-base">
+                    “{t.quote}”
+                  </p>
+                  <div className="mt-auto flex items-center gap-3 border-t border-border/60 pt-4">
+                    <div
+                      className={cn(
+                        "flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br font-heading text-sm font-semibold text-white shadow-sm",
+                        GRADIENTS[i % GRADIENTS.length],
+                      )}
+                    >
+                      {initials(t.nome)}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-medium text-foreground">{t.nome}</div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {t.especialidade} · {t.local}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </StaggerItem>
+          ))}
+        </StaggerList>
+
+        <p className="mt-8 text-center text-xs italic text-muted-foreground">
+          {textos.landing.testimonials.aviso}
+        </p>
+      </div>
+    </section>
+  );
+}
