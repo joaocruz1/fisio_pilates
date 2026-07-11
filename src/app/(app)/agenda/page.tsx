@@ -3,10 +3,19 @@ import Link from "next/link";
 import { AgendaDia } from "@/components/agenda/agenda-dia";
 import { AgendaSemana } from "@/components/agenda/agenda-semana";
 import { PageHeader } from "@/components/shared/page-header";
+import type { PlanoAula } from "@/lib/ai/schemas/plano-aula";
 import { cn } from "@/lib/utils";
-import { getAgendaDia, listAppointments } from "@/server/agenda";
+import {
+  enriquecerAppointments,
+  getAgendaDia,
+  getAgendaDiaColetiva,
+  listAppointments,
+  listClassSessionsInterval,
+} from "@/server/agenda";
 import { requireTenant } from "@/server/auth";
+import { getPlanoAula } from "@/server/session-plans";
 import { listStudents } from "@/server/students";
+import { getDadosModaisColetiva } from "@/server/turmas";
 
 export const metadata = { title: "Agenda" };
 
@@ -70,14 +79,47 @@ export default async function AgendaPage({
   );
 }
 
+/**
+ * Pré-busca em paralelo os planos de IA (`next_session`) dos atendimentos que
+ * já têm `planoReportId`, num mapa reportId → PlanoAula. Só busca os ids
+ * distintos presentes nos itens enriquecidos — poucos por tela.
+ */
+async function prefetchPlanosIndividuais(
+  reportIds: string[],
+): Promise<Record<string, PlanoAula | null>> {
+  const unicos = [...new Set(reportIds.filter(Boolean))];
+  if (unicos.length === 0) return {};
+  const entradas = await Promise.all(
+    unicos.map(async (id) => [id, await getPlanoAula(id)] as const),
+  );
+  return Object.fromEntries(entradas);
+}
+
 async function ConteudoDia(
   dia: string | undefined,
   alunos: { id: string; full_name: string }[],
   studioName: string | null,
 ) {
   const diaISO = format(validaISO(dia), "yyyy-MM-dd");
-  const itens = await getAgendaDia(diaISO);
-  return <AgendaDia diaISO={diaISO} itens={itens} alunos={alunos} studioName={studioName} />;
+  const [itens, coletivas] = await Promise.all([
+    getAgendaDia(diaISO),
+    getAgendaDiaColetiva(diaISO),
+  ]);
+  const [modais, planosIndividuais] = await Promise.all([
+    getDadosModaisColetiva(coletivas),
+    prefetchPlanosIndividuais(itens.map((i) => i.planoReportId ?? "")),
+  ]);
+  return (
+    <AgendaDia
+      diaISO={diaISO}
+      itens={itens}
+      coletivas={coletivas}
+      modais={modais}
+      planosIndividuais={planosIndividuais}
+      alunos={alunos}
+      studioName={studioName}
+    />
+  );
 }
 
 async function ConteudoSemana(
@@ -88,11 +130,24 @@ async function ConteudoSemana(
   const inicio = startOfWeek(validaISO(semana), { weekStartsOn: 1 });
   const inicioISO = format(inicio, "yyyy-MM-dd");
   const fimISO = format(addDays(inicio, 6), "yyyy-MM-dd");
-  const appointments = await listAppointments(inicioISO, fimISO);
+  const [appointments, coletivas] = await Promise.all([
+    listAppointments(inicioISO, fimISO),
+    listClassSessionsInterval(inicioISO, fimISO),
+  ]);
+  // Enriquece os atendimentos da semana (condições, última aula, plano) —
+  // mesmo enriquecimento do dia, para o modal individual funcionar igual.
+  const individuais = await enriquecerAppointments(appointments);
+  const [modais, planosIndividuais] = await Promise.all([
+    getDadosModaisColetiva(coletivas),
+    prefetchPlanosIndividuais(individuais.map((i) => i.planoReportId ?? "")),
+  ]);
   return (
     <AgendaSemana
       semanaISO={inicioISO}
-      appointments={appointments}
+      individuais={individuais}
+      coletivas={coletivas}
+      modais={modais}
+      planosIndividuais={planosIndividuais}
       alunos={alunos}
       studioName={studioName}
     />

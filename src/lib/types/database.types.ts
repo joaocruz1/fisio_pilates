@@ -49,6 +49,141 @@ export type Database = {
         };
         Relationships: [];
       };
+      studio_equipment: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          apparatus: string;
+          label: string;
+          status: string;
+          notes: string | null;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          apparatus: string;
+          label: string;
+          status?: string;
+          notes?: string | null;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          apparatus?: string;
+          label?: string;
+          status?: string;
+          notes?: string | null;
+        };
+        Relationships: [];
+      };
+      class_groups: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          name: string;
+          notes: string | null;
+          default_duration_min: number;
+          max_students: number;
+          weekday: number | null;
+          start_time: string | null;
+          status: string;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          name: string;
+          notes?: string | null;
+          default_duration_min?: number;
+          max_students?: number;
+          weekday?: number | null;
+          start_time?: string | null;
+          status?: string;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          name?: string;
+          notes?: string | null;
+          default_duration_min?: number;
+          max_students?: number;
+          weekday?: number | null;
+          start_time?: string | null;
+          status?: string;
+        };
+        Relationships: [];
+      };
+      class_group_students: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          class_group_id: string;
+          student_id: string;
+          joined_at: string;
+          ordem: number;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          class_group_id: string;
+          student_id: string;
+          joined_at?: string;
+          ordem?: number;
+        };
+        Update: {
+          ordem?: number;
+        };
+        Relationships: [];
+      };
+      class_sessions: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          class_group_id: string;
+          session_date: string;
+          start_time: string;
+          duration_min: number;
+          status: string;
+          focus: string | null;
+          notes: string | null;
+          plan_report_id: string | null;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          class_group_id: string;
+          session_date: string;
+          start_time: string;
+          duration_min?: number;
+          status?: string;
+          focus?: string | null;
+          notes?: string | null;
+          plan_report_id?: string | null;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          session_date?: string;
+          start_time?: string;
+          duration_min?: number;
+          status?: string;
+          focus?: string | null;
+          notes?: string | null;
+          plan_report_id?: string | null;
+        };
+        Relationships: [];
+      };
       tenants: {
         Row: {
           id: string;
@@ -667,7 +802,8 @@ export type Database = {
         Row: {
           id: string;
           tenant_id: string;
-          student_id: string;
+          student_id: string | null;
+          class_session_id: string | null;
           report_type: string;
           period_start: string | null;
           period_end: string | null;
@@ -688,7 +824,8 @@ export type Database = {
         Insert: {
           id?: string;
           tenant_id: string;
-          student_id: string;
+          student_id?: string | null;
+          class_session_id?: string | null;
           report_type: string;
           period_start?: string | null;
           period_end?: string | null;
