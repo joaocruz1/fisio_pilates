@@ -1,4 +1,4 @@
-import { ArrowLeftIcon, SparkleIcon } from "@phosphor-icons/react";
+import { ArrowLeftIcon, SparkleIcon } from "@phosphor-icons/react/ssr";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
