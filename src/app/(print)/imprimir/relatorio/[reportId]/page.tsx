@@ -37,6 +37,8 @@ export default async function ImprimirRelatorioPage({
   const { reportId } = await params;
   const [{ tenant }, report] = await Promise.all([requireTenant(), getReport(reportId)]);
   if (report?.status !== "completed" || !report.structured) notFound();
+  // A impressão de relatório é por aluno; planos de aula coletiva não têm aluno único.
+  if (!report.student_id) notFound();
 
   const aluno = await getStudent(report.student_id);
   const r = report.structured as unknown as Relatorio;

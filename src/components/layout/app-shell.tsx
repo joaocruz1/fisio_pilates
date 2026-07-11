@@ -2,6 +2,7 @@
 
 import type { Icon } from "@phosphor-icons/react";
 import {
+  BarbellIcon,
   BookOpenIcon,
   CalendarDotsIcon,
   ChatCircleIcon,
@@ -9,6 +10,7 @@ import {
   HouseIcon,
   QuestionIcon,
   UsersIcon,
+  UsersThreeIcon,
 } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -26,6 +28,8 @@ const ITENS: Item[] = [
   { href: "/dashboard", label: textos.nav.inicio, Icon: HouseIcon },
   { href: "/alunos", label: textos.nav.alunos, Icon: UsersIcon },
   { href: "/agenda", label: textos.nav.agenda, Icon: CalendarDotsIcon },
+  { href: "/turmas", label: textos.nav.turmas, Icon: UsersThreeIcon },
+  { href: "/aparelhos", label: textos.nav.aparelhos, Icon: BarbellIcon },
   { href: "/assistente", label: textos.nav.assistente, Icon: ChatCircleIcon },
   { href: "/conhecimento", label: textos.nav.conhecimento, Icon: BookOpenIcon },
   { href: "/configuracoes", label: textos.nav.configuracoes, Icon: GearIcon },

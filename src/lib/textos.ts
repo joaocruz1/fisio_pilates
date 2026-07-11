@@ -14,6 +14,8 @@ export const textos = {
     inicio: "Início",
     alunos: "Alunos",
     agenda: "Agenda",
+    aparelhos: "Aparelhos",
+    turmas: "Turmas",
     assistente: "Assistente",
     conhecimento: "Base de Conhecimento",
     configuracoes: "Configurações",

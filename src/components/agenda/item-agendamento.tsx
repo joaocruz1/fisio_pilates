@@ -5,6 +5,7 @@ import {
   ClipboardTextIcon,
   DotsThreeVerticalIcon,
   ProhibitIcon,
+  SparkleIcon,
   TrashIcon,
   WhatsappLogoIcon,
   XCircleIcon,
@@ -12,6 +13,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ModalAgendamento } from "@/components/agenda/modal-agendamento";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,10 +24,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { lembreteWhatsApp } from "@/lib/agenda-whatsapp";
+import type { PlanoAula } from "@/lib/ai/schemas/plano-aula";
 import { rotuloStatusSessao, type StatusSessao } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { atualizarStatusAgendamento, excluirAgendamento } from "@/server/actions/agenda";
-import type { Appointment } from "@/server/agenda";
+import type { AgendaDiaItem } from "@/server/agenda";
 
 const VARIANTE: Record<StatusSessao, "info" | "success" | "warning" | "destructive"> = {
   scheduled: "info",
@@ -45,9 +48,11 @@ function fim(start: string, dur: number): string {
 
 export function ItemAgendamento({
   ag,
+  plano,
   studioName = null,
 }: {
-  ag: Appointment;
+  ag: AgendaDiaItem;
+  plano: PlanoAula | null;
   studioName?: string | null;
 }) {
   const router = useRouter();
@@ -100,22 +105,39 @@ export function ItemAgendamento({
         cancelada && "opacity-55",
       )}
     >
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          <span className="font-mono font-semibold tabular-nums">{inicio}</span>
-          <Badge variant={VARIANTE[status]} className="px-1.5 py-0 text-[10px]">
-            {rotuloStatusSessao[status]}
-          </Badge>
-        </div>
-        <p className={cn("mt-0.5 truncate font-medium", cancelada && "line-through")}>
-          {ag.students?.full_name ?? "Aluno"}
-        </p>
-        <p className="text-[11px] text-muted-foreground">
-          {inicio}–{fim(ag.start_time, ag.duration_min)}
-          {ag.notes ? ` · ${ag.notes}` : ""}
-        </p>
-      </div>
+      {/* Info = trigger do modal (sem interativos aninhados) */}
+      <ModalAgendamento
+        ag={ag}
+        plano={plano}
+        studioName={studioName}
+        trigger={
+          <button
+            type="button"
+            className="min-w-0 flex-1 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono font-semibold tabular-nums">{inicio}</span>
+              <Badge variant={VARIANTE[status]} className="px-1.5 py-0 text-[10px]">
+                {rotuloStatusSessao[status]}
+              </Badge>
+              {ag.temPlano ? (
+                <span className="inline-flex items-center gap-0.5 text-primary">
+                  <SparkleIcon className="size-3" weight="fill" />
+                </span>
+              ) : null}
+            </div>
+            <p className={cn("mt-0.5 truncate font-medium", cancelada && "line-through")}>
+              {ag.students?.full_name ?? "Aluno"}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              {inicio}–{fim(ag.start_time, ag.duration_min)}
+              {ag.notes ? ` · ${ag.notes}` : ""}
+            </p>
+          </button>
+        }
+      />
 
+      {/* Dropdown — irmão, fora do trigger */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button

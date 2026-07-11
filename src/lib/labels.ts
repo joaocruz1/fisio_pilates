@@ -76,6 +76,42 @@ export const rotuloAparelho: Record<Aparelho, string> = {
   other: "Outro",
 };
 
+// --- Aparelho do estúdio (inventário) ---
+export const STATUS_APARELHO = ["active", "inactive", "maintenance"] as const;
+export type StatusAparelho = (typeof STATUS_APARELHO)[number];
+export const rotuloStatusAparelho: Record<StatusAparelho, string> = {
+  active: "Ativo",
+  inactive: "Inativo",
+  maintenance: "Em manutenção",
+};
+
+// --- Turma (aula coletiva) ---
+export const STATUS_TURMA = ["active", "archived"] as const;
+export type StatusTurma = (typeof STATUS_TURMA)[number];
+export const rotuloStatusTurma: Record<StatusTurma, string> = {
+  active: "Ativa",
+  archived: "Arquivada",
+};
+
+export const DIAS_SEMANA = [
+  "Domingo",
+  "Segunda",
+  "Terça",
+  "Quarta",
+  "Quinta",
+  "Sexta",
+  "Sábado",
+] as const;
+
+// --- Sessão de turma (ocorrência) ---
+export const STATUS_CLASS_SESSION = ["scheduled", "completed", "cancelled"] as const;
+export type StatusClassSession = (typeof STATUS_CLASS_SESSION)[number];
+export const rotuloStatusClassSession: Record<StatusClassSession, string> = {
+  scheduled: "Agendada",
+  completed: "Realizada",
+  cancelled: "Cancelada",
+};
+
 // --- Documentos ---
 export const DOC_KINDS = [
   "lesson",

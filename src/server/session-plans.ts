@@ -6,6 +6,24 @@ import { requireTenant } from "@/server/auth";
 import { listExercises } from "@/server/exercises";
 
 /**
+ * Busca só o plano de aula (ai_reports.structured, report_type 'next_session',
+ * status 'completed') para leitura — sem mapear exercícios para o catálogo.
+ * Usado pelo modal da agenda (visualização). Para pré-preencher o SessaoForm,
+ * use `getPlanoPrefill`.
+ */
+export async function getPlanoAula(reportId: string): Promise<PlanoAula | null> {
+  await requireTenant();
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("ai_reports")
+    .select("structured, report_type, status")
+    .eq("id", reportId)
+    .maybeSingle();
+  if (data?.report_type !== "next_session" || data.status !== "completed") return null;
+  return data.structured as unknown as PlanoAula;
+}
+
+/**
  * Converte um plano de aula gerado pela IA (ai_reports.structured, report_type
  * 'next_session') num pré-preenchimento para o SessaoForm, mapeando os nomes de
  * exercício para os ids do catálogo. Retorna os não encontrados para aviso.

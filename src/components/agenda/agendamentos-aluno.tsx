@@ -4,18 +4,22 @@ import { CalendarPlusIcon } from "@phosphor-icons/react";
 import { ItemAgendamento } from "@/components/agenda/item-agendamento";
 import { NovoAgendamento } from "@/components/agenda/novo-agendamento";
 import { Button } from "@/components/ui/button";
-import type { Appointment } from "@/server/agenda";
+import type { PlanoAula } from "@/lib/ai/schemas/plano-aula";
+import type { AgendaDiaItem } from "@/server/agenda";
 
 /** Próximas aulas agendadas de um aluno + botão para agendar (na ficha). */
 export function AgendamentosAluno({
   studentId,
   studentName,
   proximas,
+  plano = null,
   studioName = null,
 }: {
   studentId: string;
   studentName: string;
-  proximas: Appointment[];
+  proximas: AgendaDiaItem[];
+  /** Plano da próxima aula do aluno (se houver) — mostrado no modal. */
+  plano?: PlanoAula | null;
   studioName?: string | null;
 }) {
   const alunos = [{ id: studentId, full_name: studentName }];
@@ -41,7 +45,7 @@ export function AgendamentosAluno({
       ) : (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {proximas.map((ag) => (
-            <ItemAgendamento key={ag.id} ag={ag} studioName={studioName} />
+            <ItemAgendamento key={ag.id} ag={ag} plano={plano} studioName={studioName} />
           ))}
         </div>
       )}
