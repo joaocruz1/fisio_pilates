@@ -36,13 +36,14 @@ async function enviarArquivo(
   studentId: string,
   file: File,
   meta: { kind: DocKind; takenAt: string; description: string },
+  assessmentId?: string,
 ): Promise<string | null> {
   const info = {
     fileName: file.name,
     mimeType: file.type || "application/octet-stream",
     sizeBytes: file.size,
   };
-  const criado = await criarUrlUpload(studentId, info);
+  const criado = await criarUrlUpload(studentId, info, assessmentId);
   if (!criado.ok) return criado.erro;
 
   const supabase = createClient();
@@ -51,12 +52,16 @@ async function enviarArquivo(
     .uploadToSignedUrl(criado.data.path, criado.data.token, file, { contentType: info.mimeType });
   if (upErr) return "Falha ao enviar o arquivo.";
 
-  const conf = await confirmarUpload(studentId, {
-    ...info,
-    storagePath: criado.data.path,
-    docId: criado.data.docId,
-    meta,
-  });
+  const conf = await confirmarUpload(
+    studentId,
+    {
+      ...info,
+      storagePath: criado.data.path,
+      docId: criado.data.docId,
+      meta,
+    },
+    assessmentId,
+  );
   return conf.ok ? null : conf.erro;
 }
 
@@ -65,6 +70,7 @@ export function UploadDocumento({
   trigger,
   defaultKind = "lesson",
   title = "Importar aulas e documentos",
+  assessmentId,
 }: {
   studentId: string;
   /** Gatilho customizado (para reusar em cabeçalhos/abas). */
@@ -72,6 +78,8 @@ export function UploadDocumento({
   /** Categoria pré-selecionada (ex.: "lesson" na aba Aulas). */
   defaultKind?: DocKind;
   title?: string;
+  /** Quando informado, vincula o documento a uma avaliação (anexos). */
+  assessmentId?: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -106,11 +114,16 @@ export function UploadDocumento({
     try {
       for (let i = 0; i < files.length; i++) {
         setProgresso(`Enviando ${i + 1}/${files.length}…`);
-        const err = await enviarArquivo(studentId, files[i] as File, {
-          kind,
-          takenAt,
-          description,
-        });
+        const err = await enviarArquivo(
+          studentId,
+          files[i] as File,
+          {
+            kind,
+            takenAt,
+            description,
+          },
+          assessmentId,
+        );
         if (err) erros++;
       }
       if (erros === 0) toast.success(`${files.length} documento(s) enviado(s).`);
@@ -130,11 +143,16 @@ export function UploadDocumento({
     try {
       const nome = `${slugify(titulo).slice(0, 50) || "aula"}.txt`;
       const file = new File([texto], nome, { type: "text/plain" });
-      const err = await enviarArquivo(studentId, file, {
-        kind: "lesson",
-        takenAt: textoData,
-        description: titulo,
-      });
+      const err = await enviarArquivo(
+        studentId,
+        file,
+        {
+          kind: "lesson",
+          takenAt: textoData,
+          description: titulo,
+        },
+        assessmentId,
+      );
       if (err) return void toast.error(err);
       toast.success("Aula registrada.");
       setOpen(false);

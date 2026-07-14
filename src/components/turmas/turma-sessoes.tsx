@@ -13,8 +13,34 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { rotuloStatusClassSession, type StatusClassSession } from "@/lib/labels";
 import { formatarData } from "@/lib/utils";
-import { agendarClassSession } from "@/server/actions/turmas";
+import { agendarClassSession, gerarOcorrenciasTurma } from "@/server/actions/turmas";
 import type { ClassSession } from "@/server/turmas";
+
+/** Botão para gerar/estender ocorrências a partir do slot habitual da turma. */
+function GerarOcorrencias({ classGroupId }: { classGroupId: string }) {
+  const router = useRouter();
+  const [ocupado, setOcupado] = useState(false);
+
+  async function gerar(semanas: number) {
+    setOcupado(true);
+    try {
+      const res = await gerarOcorrenciasTurma(classGroupId, semanas);
+      if (res.ok) toast.success(`${res.data.criadas} ocorrência(s) gerada(s).`);
+      else toast.error(res.erro);
+      router.refresh();
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <Button type="button" variant="outline" size="sm" disabled={ocupado} onClick={() => gerar(4)}>
+        <CalendarPlusIcon className="size-4" /> Gerar próximas 4 semanas
+      </Button>
+    </div>
+  );
+}
 
 const VARIANTE: Record<StatusClassSession, "info" | "success" | "destructive"> = {
   scheduled: "info",
@@ -134,6 +160,7 @@ export function TurmaSessoes({
   return (
     <div className="flex flex-col gap-4">
       <NovoAgendamentoTurma classGroupId={classGroupId} defaultDurationMin={defaultDurationMin} />
+      <GerarOcorrencias classGroupId={classGroupId} />
 
       {sessoes.length === 0 ? (
         <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">

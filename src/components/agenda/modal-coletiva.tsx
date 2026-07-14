@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { GerarPlanoColetivo } from "@/components/turmas/gerar-plano-coletivo";
+import { PlanoColetivoContainer } from "@/components/turmas/plano-coletivo-container";
 import { PlanoColetivoView } from "@/components/turmas/plano-coletivo-view";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -144,7 +145,14 @@ export function ModalColetiva({
                     <p className="mt-1 text-xs">{plano.errorMessage}</p>
                   </div>
                 ) : null}
-                {plano.plano ? (
+                {plano.plano && plano.reportId ? (
+                  <PlanoColetivoContainer
+                    reportId={plano.reportId}
+                    plano={plano.plano}
+                    alunos={plano.alunos}
+                    estacoes={plano.estacoes}
+                  />
+                ) : plano.plano ? (
                   <PlanoColetivoView
                     plano={plano.plano}
                     alunos={plano.alunos}

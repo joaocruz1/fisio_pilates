@@ -49,7 +49,7 @@ export async function POST(req: Request) {
   // Ocorrência da turma (RLS garante o escopo do tenant).
   const { data: sessao } = await supabase
     .from("class_sessions")
-    .select("id, class_group_id, session_date")
+    .select("id, class_group_id, session_date, start_time, duration_min")
     .eq("id", classSessionId)
     .maybeSingle();
   if (!sessao) return NextResponse.json({ erro: "Aula não encontrada." }, { status: 404 });
@@ -84,6 +84,8 @@ export async function POST(req: Request) {
           classGroupId: sessao.class_group_id,
           classSessionId,
           date: sessao.session_date,
+          startTime: sessao.start_time,
+          durationMin: sessao.duration_min,
           onEtapa: (etapa) => send({ type: "stage", stage: etapa }),
         });
 

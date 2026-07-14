@@ -6,6 +6,7 @@ import type { Database } from "@/lib/types/database.types";
 import { requireTenant } from "@/server/auth";
 
 export type Assessment = Database["public"]["Tables"]["assessments"]["Row"];
+export type DocumentoAvaliacao = Database["public"]["Tables"]["documents"]["Row"];
 
 export const listAssessments = cache(async (studentId: string): Promise<Assessment[]> => {
   await requireTenant();
@@ -32,3 +33,18 @@ export const getAssessment = cache(async (id: string): Promise<Assessment> => {
   if (!data) notFound();
   return data;
 });
+
+/** Documentos anexados a uma avaliação (PDF/Word/imagens). */
+export const listDocumentosAvaliacao = cache(
+  async (assessmentId: string): Promise<DocumentoAvaliacao[]> => {
+    await requireTenant();
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("documents")
+      .select("*")
+      .eq("assessment_id", assessmentId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false });
+    return data ?? [];
+  },
+);

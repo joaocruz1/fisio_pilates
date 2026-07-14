@@ -164,6 +164,7 @@ export type PlanoColetivoViewData = {
   temPlano: boolean;
   status: string;
   errorMessage: string | null;
+  reportId: string | null;
   plano: PlanoAulaGrupo | null;
   alunos: AlunaDoPlano[];
   estacoes: EstacaoDoPlano[];
@@ -182,6 +183,7 @@ export async function getPlanoColetivoViewData(sessionId: string): Promise<Plano
       temPlano: false,
       status: "idle",
       errorMessage: null,
+      reportId: null,
       plano: null,
       alunos: [],
       estacoes: [],
@@ -210,6 +212,7 @@ export async function getPlanoColetivoViewData(sessionId: string): Promise<Plano
     temPlano: true,
     status: report.status,
     errorMessage: report.error_message,
+    reportId: report.id,
     plano,
     alunos,
     estacoes,
