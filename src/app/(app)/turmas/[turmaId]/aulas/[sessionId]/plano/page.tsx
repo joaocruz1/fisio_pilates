@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { GerarPlanoColetivo } from "@/components/turmas/gerar-plano-coletivo";
+import { PlanoColetivoContainer } from "@/components/turmas/plano-coletivo-container";
 import { PlanoColetivoView } from "@/components/turmas/plano-coletivo-view";
 import { Button } from "@/components/ui/button";
 import { getClassSession, getPlanoColetivoViewData, getTurma } from "@/server/turmas";
@@ -86,7 +87,14 @@ export default async function PlanoColetivoPage({
             </div>
           ) : null}
 
-          {view.plano ? (
+          {view.plano && view.reportId ? (
+            <PlanoColetivoContainer
+              reportId={view.reportId}
+              plano={view.plano}
+              alunos={view.alunos}
+              estacoes={view.estacoes}
+            />
+          ) : view.plano ? (
             <PlanoColetivoView
               plano={view.plano}
               alunos={view.alunos}

@@ -27,9 +27,14 @@ REGRAS DE CONTEÚDO:
   exato como aparece nela, e o exercício deve ser adequado AO APARELHO da estação ocupada.
 - Respeite as condições e contraindicações INDIVIDUAIS de cada aluna (descritas no bloco <turma>
   sob o pseudônimo dela). Se uma aluna tem contraindicação para um movimento, evite ou ajuste.
-- USE o bloco <conhecimento> (base + web). Fundamente os cuidados em evidência e CITE [KB-n]/[WEB-n]
-  nos \`cuidados\` e na \`justificativa\`. Se a base não cobrir, diga isso — não invente.
+- CADA aluna traz suas próprias referências no bloco <turma> (formato [A-KB-1], [B-KB-1], ...),
+  recuperadas da base de conhecimento a partir dos dados dela. USE as referências DAQUELA aluna
+  para fundamentar os \`cuidados\` individuais dela — cite [X-KB-n] com o pseudônimo correto.
+- USE o bloco <conhecimento> (web) para contexto geral da aula e CITE [WEB-n] quando relevante.
+  Se a base não cobrir um ponto, diga isso — não invente referências.
 - Preencha séries, repetições, carga/molas e nível com valores concretos e seguros para cada aluna.
+- Respeite o HORÁRIO da aula (informado no prompt): a soma das durações dos blocos + aquecimento
+  deve caber no tempo disponível da ocorrência.
 - Este plano é uma SUGESTÃO para a profissional revisar e ajustar — nunca uma prescrição fechada.
 
 SEJA CONCISO E DIRETO:

@@ -251,6 +251,7 @@ export async function buildDossie(params: {
   onEtapa?.("base");
   const { kbChunks, webResults } = await ragSearch(ragQuery, {
     tenantId,
+    studentId,
     k: lim.kbK,
     forcarWeb: params.forcarWeb,
   });

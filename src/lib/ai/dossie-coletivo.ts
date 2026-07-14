@@ -1,7 +1,8 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import { LIM_COMPACTO, montarFichaAluna, type Periodo } from "@/lib/ai/dossie";
-import { ragSearch } from "@/lib/ai/rag";
+import { type KbChunk, ragSearch } from "@/lib/ai/rag";
+import { buscarWeb, type WebResult } from "@/lib/ai/tavily";
 import { createClient } from "@/lib/supabase/server";
 import { listEstacoesAtivas } from "@/server/aparelhos";
 import { listAlunosDaTurma } from "@/server/turmas";
@@ -31,19 +32,23 @@ export type DossieColetivo = {
  * (LGPD — ver 07-lgpd-seguranca.md).
  *
  * Cada aluna vira um bloco `<aluna id="A">…</aluna>` reusando `montarFichaAluna`
- * (compact). O RAG é AGREGADO: 1 busca a partir da união das condições/queixas de
- * todas, em vez de N buscas. Teto de 8 alunas (trunca e avisa no prompt).
+ * (compact). O RAG é POR ALUNA: uma busca por aluna (com seus próprios termos
+ * técnicos e `studentId`) recupera chunks da KB do aluno + tenant + global; cada
+ * bloco traz suas próprias referências `[X-KB-n]`. Uma busca web agregada
+ * complementa o `<conhecimento>` geral. Teto de 8 alunas (trunca e avisa).
  */
 export async function buildDossieColetivo(params: {
   tenantId: string;
   classGroupId: string;
   classSessionId: string;
   date: string;
+  startTime?: string | null;
+  durationMin?: number | null;
   onEtapa?: (etapa: "dados" | "base") => void;
   /** Sempre compact na aula coletiva (latência/custo). */
   compact?: true;
 }): Promise<DossieColetivo> {
-  const { tenantId, classGroupId, classSessionId, date, onEtapa } = params;
+  const { tenantId, classGroupId, classSessionId, date, startTime, durationMin, onEtapa } = params;
   onEtapa?.("dados");
 
   const supabase = await createClient();
@@ -70,33 +75,46 @@ export async function buildDossieColetivo(params: {
   // --- Fichas pseudonimizadas de cada aluna, em paralelo (compact) ---
   const period: Periodo = { from: null, to: date };
   const lim = LIM_COMPACTO;
-  const fichas = await Promise.all(
+  const fichasBase = await Promise.all(
     alunos.map(async ({ rotulo, studentId }) => {
       const ficha = await montarFichaAluna(studentId, supabase, period, lim);
       return { rotulo, studentId, ficha };
     }),
   );
 
-  // --- RAG agregado: 1 busca a partir da união dos termos técnicos ---
-  const nomesCond = [...new Set(fichas.flatMap((f) => f.ficha.ragTermos.nomesCond))];
-  const queixas = fichas.map((f) => f.ficha.ragTermos.queixa).filter(Boolean);
-  const objetivos = [...new Set(fichas.flatMap((f) => f.ficha.ragTermos.objetivos))];
-  const ragQuery =
-    `${nomesCond.join(", ")} ${queixas.join(" ")} ${objetivos.join(" ")} pilates exercícios progressão contraindicações segurança aula coletiva`
-      .replace(/\s+/g, " ")
-      .trim();
+  // --- RAG por aluna: 1 busca por aluna (KB do aluno + tenant + global), em
+  // paralelo. Aumenta `k` para "passar por toda a base". Sem web por aluna
+  // (evita N chamadas) — uma busca web agregada complementa o contexto geral.
   onEtapa?.("base");
-  const { kbChunks, webResults } = await ragSearch(ragQuery, {
-    tenantId,
-    k: lim.kbK,
-    forcarWeb: true,
-  });
-  const conhecimentoLinhas = [
-    ...kbChunks.map(
-      (c, i) => `[KB-${i + 1}] ${c.context_header ?? ""}: ${c.content.slice(0, lim.kbChars)}`,
+  const kPorAluna = lim.kbK * 2;
+  const [ragPorAluna, webAgregada] = await Promise.all([
+    Promise.all(
+      fichasBase.map(async (f) => {
+        const { nomesCond, queixa, objetivos } = f.ficha.ragTermos;
+        const ragQuery =
+          `${nomesCond.join(", ")} ${queixa} ${objetivos.join(" ")} pilates exercícios progressão contraindicações segurança`
+            .replace(/\s+/g, " ")
+            .trim();
+        const { kbChunks } = await ragSearch(ragQuery, {
+          tenantId,
+          studentId: f.studentId,
+          k: kPorAluna,
+          semWeb: true,
+        });
+        return { ...f, kbChunks };
+      }),
     ),
-    ...webResults.map((w, i) => `[WEB-${i + 1}] ${w.title} (${w.url}): ${w.content.slice(0, 600)}`),
-  ];
+    buscarWeb(
+      `${[...new Set(fichasBase.flatMap((f) => f.ficha.ragTermos.nomesCond))].join(", ")} pilates aula coletiva rotação aparelhos progressão contraindicações segurança`,
+    ),
+  ]);
+  const fichas = ragPorAluna;
+  const webResults: WebResult[] = webAgregada;
+
+  // Conhecimento global (web agregada) — referências [WEB-n] compartilhadas.
+  const conhecimentoLinhas = webResults.map(
+    (w, i) => `[WEB-${i + 1}] ${w.title} (${w.url}): ${w.content.slice(0, 600)}`,
+  );
 
   // --- Catálogo de exercícios ativos por aparelho (a IA só pode usar estes) ---
   const { data: exs } = await supabase
@@ -119,7 +137,13 @@ export async function buildDossieColetivo(params: {
 
   // --- Monta o prompt (alunas só por pseudônimo) ---
   const turmaBloco = fichas
-    .map(({ rotulo, ficha }) => {
+    .map(({ rotulo, ficha, kbChunks: meusKb }) => {
+      const kbRefs = meusKb
+        .slice(0, lim.kbK)
+        .map(
+          (c, i) =>
+            `[${rotulo}-KB-${i + 1}] ${c.context_header ?? ""}: ${c.content.slice(0, lim.kbChars)}`,
+        );
       const linhas = [
         ...ficha.fichaLinhas,
         ...(ficha.sessoesLinhas.length
@@ -127,22 +151,26 @@ export async function buildDossieColetivo(params: {
           : ["Sem aulas registradas."]),
         ...(ficha.medidasLinhas.length ? ["Medidas:", ...ficha.medidasLinhas] : []),
         ...(ficha.docsLinhas.length ? ["Documentos:", ...ficha.docsLinhas] : []),
+        ...(kbRefs.length ? ["Conhecimento (próprio da aluna):", ...kbRefs] : []),
       ];
       return `<aluna id="${rotulo}">\n${linhas.join("\n")}\n</aluna>`;
     })
     .join("\n\n");
 
   const estacoesBloco = estacoes.map((e) => `${e.label} (${e.apparatus})`).join("\n");
+  const horarioTxt = startTime
+    ? `${startTime.slice(0, 5)}${durationMin ? ` · ${durationMin} min` : ""}`
+    : null;
 
   const promptUser = [
     `<turma>\n${turmaBloco}\n</turma>`,
     `<estacoes>\n${estacoesBloco || "Nenhuma estação ativa cadastrada."}\n</estacoes>`,
     `<catalogo>\n${catalogo}\n</catalogo>`,
-    `<conhecimento>\n${conhecimentoLinhas.join("\n\n") || "Sem material relevante na base."}\n</conhecimento>`,
+    `<conhecimento>\n${conhecimentoLinhas.join("\n\n") || "Sem material web relevante."}\n</conhecimento>`,
     truncado
       ? `OBSERVAÇÃO: a turma tem ${alunosTurma.length} alunas, mas o plano considera apenas as ${MAX_ALUNAS} primeiras (limite operacional).`
       : "",
-    `Data da aula: ${date}. Monte o plano coletivo com rotação de aparelhos conforme as regras. Cada aluna aparece por seu pseudônimo (${alunos.map((a) => a.rotulo).join(", ")}); NÃO use nomes reais.`,
+    `Data da aula: ${date}${horarioTxt ? ` · horário ${horarioTxt}` : ""}. Monte o plano coletivo com rotação de aparelhos conforme as regras. Cada aluna aparece por seu pseudônimo (${alunos.map((a) => a.rotulo).join(", ")}) e traz suas próprias referências [${alunos.map((a) => a.rotulo).join("-KB-n, ")}-KB-n] — use-as para fundamentar os cuidados individuais. NÃO use nomes reais.`,
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -157,11 +185,11 @@ export async function buildDossieColetivo(params: {
       studentId: f.studentId,
       conditionCount: f.ficha.conditionCount,
       sessionIds: f.ficha.sessionIds,
+      kbChunkIds: f.kbChunks.map((c: KbChunk) => c.id),
     })),
     alunosTruncados: truncado ? alunosTurma.length : null,
     estacoes: estacoes.map((e) => ({ label: e.label, apparatus: e.apparatus })),
     catalogo,
-    kbChunkIds: kbChunks.map((c) => c.id),
     webUrls: webResults.map((w) => w.url),
   };
   const inputHash = createHash("sha256").update(JSON.stringify(snapshot)).digest("hex");

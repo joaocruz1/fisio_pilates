@@ -1,12 +1,14 @@
 "use server";
 import "server-only";
 import { revalidatePath } from "next/cache";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { type DocumentoMetaInput, documentoMetaSchema } from "@/lib/validators/documento";
 import type { ActionResult } from "@/server/actions/result";
 import { requireTenant } from "@/server/auth";
 import { registrarAuditoria } from "@/server/services/audit";
 import { extrairTextoDocumento } from "@/server/services/extract";
+import { ingerirDocumentoAluno } from "@/server/services/kb-ingest-aluno";
 import {
   ALLOWED_DOC_MIMES,
   MAX_DOC_BYTES,
@@ -18,23 +20,45 @@ const EXTRACAO_MAX_BYTES = 10 * 1024 * 1024; // extrai texto de PDFs até 10 MB 
 
 type UploadInput = { fileName: string; mimeType: string; sizeBytes: number };
 
+/** Confirma que a avaliação (se informada) pertence ao tenant e ao aluno. */
+async function validarAssessment(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  assessmentId: string | undefined,
+  studentId: string,
+): Promise<boolean> {
+  if (!assessmentId) return true;
+  const { data } = await supabase
+    .from("assessments")
+    .select("id")
+    .eq("id", assessmentId)
+    .eq("student_id", studentId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  return Boolean(data);
+}
+
 /** Passo 1: valida e gera uma signed upload URL para o browser enviar direto ao Storage. */
 export async function criarUrlUpload(
   studentId: string,
   input: UploadInput,
+  assessmentId?: string,
 ): Promise<ActionResult<{ path: string; token: string; docId: string }>> {
   const ctx = await requireTenant();
 
   if (!ALLOWED_DOC_MIMES.includes(input.mimeType as (typeof ALLOWED_DOC_MIMES)[number])) {
-    return { ok: false, erro: "Tipo de arquivo não permitido (use PDF, JPG, PNG ou WEBP)." };
+    return { ok: false, erro: "Tipo de arquivo não permitido (use PDF, Word, JPG, PNG ou WEBP)." };
   }
   if (input.sizeBytes <= 0 || input.sizeBytes > MAX_DOC_BYTES) {
     return { ok: false, erro: "Arquivo muito grande (máximo 25 MB)." };
   }
 
+  const supabase = await createClient();
+  if (assessmentId && !(await validarAssessment(supabase, assessmentId, studentId))) {
+    return { ok: false, erro: "Avaliação não encontrada para este aluno." };
+  }
+
   const docId = crypto.randomUUID();
   const path = pathDocumento(ctx.tenant.id, studentId, docId, input.fileName);
-  const supabase = await createClient();
   const { data, error } = await supabase.storage
     .from(STUDENT_DOCS_BUCKET)
     .createSignedUploadUrl(path);
@@ -47,6 +71,7 @@ export async function criarUrlUpload(
 export async function confirmarUpload(
   studentId: string,
   input: UploadInput & { storagePath: string; docId: string; meta: DocumentoMetaInput },
+  assessmentId?: string,
 ): Promise<ActionResult> {
   const ctx = await requireTenant();
 
@@ -56,6 +81,10 @@ export async function confirmarUpload(
   }
   const meta = metaParsed.data;
   const supabase = await createClient();
+
+  if (assessmentId && !(await validarAssessment(supabase, assessmentId, studentId))) {
+    return { ok: false, erro: "Avaliação não encontrada para este aluno." };
+  }
 
   // Extrai texto (pdf/docx/texto/imagem) para alimentar a IA. Imagens e PDFs
   // escaneados passam por transcrição de visão. (Em produção, mover extração
@@ -79,6 +108,7 @@ export async function confirmarUpload(
     id: input.docId,
     tenant_id: ctx.tenant.id,
     student_id: studentId,
+    assessment_id: assessmentId ?? null,
     kind: meta.kind,
     bucket: STUDENT_DOCS_BUCKET,
     storage_path: input.storagePath,
@@ -98,10 +128,17 @@ export async function confirmarUpload(
     action: "document.upload",
     entityType: "document",
     entityId: input.docId,
-    metadata: { kind: meta.kind },
+    metadata: { kind: meta.kind, assessmentId: assessmentId ?? null },
   });
 
+  // Ingestão na KB por aluno (scope='student') em background: fire-and-forget.
+  // Falhas são logadas internamente e não falham o upload.
+  void ingerirDocumentoAluno(input.docId).catch((e) =>
+    console.error("[documentos] ingestão RAG falhou:", e),
+  );
+
   revalidatePath(`/alunos/${studentId}/documentos`);
+  revalidatePath(`/alunos/${studentId}/avaliacao`);
   return { ok: true, data: null };
 }
 
@@ -141,6 +178,21 @@ export async function excluirDocumento(
   const ctx = await requireTenant();
   const supabase = await createClient();
 
+  // Recupera o vínculo com a KB do aluno ANTES do soft delete, para limpar os
+  // chunks em cascata (kb_documents.on delete cascade nos chunks via document_id).
+  const { data: doc } = await supabase
+    .from("documents")
+    .select("kb_document_id")
+    .eq("id", documentId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (doc?.kb_document_id) {
+    // kb_documents scope='student' não é coberto pela policy de delete de
+    // authenticated (que exige scope='tenant'); usa admin (bypass RLS).
+    const admin = createAdminClient();
+    await admin.from("kb_documents").delete().eq("id", doc.kb_document_id);
+  }
+
   const { error } = await supabase
     .from("documents")
     .update({ deleted_at: new Date().toISOString() })
@@ -157,5 +209,6 @@ export async function excluirDocumento(
   });
 
   revalidatePath(`/alunos/${studentId}/documentos`);
+  revalidatePath(`/alunos/${studentId}/avaliacao`);
   return { ok: true, data: null };
 }

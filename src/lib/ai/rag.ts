@@ -19,19 +19,28 @@ export type KbChunk = {
  */
 export async function ragSearch(
   query: string,
-  opts: { tenantId: string; k?: number; forcarWeb?: boolean },
+  opts: {
+    tenantId: string;
+    studentId?: string;
+    k?: number;
+    forcarWeb?: boolean;
+    /** Pula qualquer busca web (fallback ou forçada) — só retorna KB. Útil para
+     *  buscas por aluno (evita N chamadas web no dossiê coletivo). */
+    semWeb?: boolean;
+  },
 ): Promise<{ kbChunks: KbChunk[]; webResults: WebResult[] }> {
   const supabase = await createClient();
 
   // Quando a web é forçada (ex.: montar aula), dispara a busca web EM PARALELO
   // com o embedding+match (a web só precisa do texto da query) — economiza ~0.3-1s.
-  const webForcadaPromise = opts.forcarWeb ? buscarWeb(query) : null;
+  const webForcadaPromise = opts.forcarWeb && !opts.semWeb ? buscarWeb(query) : null;
 
   const embedding = await gerarEmbedding(query);
   const { data } = await supabase.rpc("match_kb_chunks", {
     query_embedding: vetorParaSql(embedding),
     query_text: query,
     p_tenant_id: opts.tenantId,
+    p_student_id: opts.studentId ?? null,
     match_count: opts.k ?? 8,
   });
   const kbChunks: KbChunk[] = (data ?? []).map((d) => ({
@@ -42,6 +51,8 @@ export async function ragSearch(
     page_start: d.page_start,
     similarity: d.similarity,
   }));
+
+  if (opts.semWeb) return { kbChunks, webResults: [] };
 
   // Gatilho de fallback web (03-rag.md §5.2): base local não cobre o assunto.
   const top1 = kbChunks[0]?.similarity ?? 0;

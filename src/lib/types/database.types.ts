@@ -688,6 +688,8 @@ export type Database = {
           uploaded_by: string;
           created_at: string;
           deleted_at: string | null;
+          assessment_id: string | null;
+          kb_document_id: string | null;
         };
         Insert: {
           id?: string;
@@ -705,6 +707,8 @@ export type Database = {
           uploaded_by: string;
           created_at?: string;
           deleted_at?: string | null;
+          assessment_id?: string | null;
+          kb_document_id?: string | null;
         };
         Update: {
           kind?: string;
@@ -712,6 +716,8 @@ export type Database = {
           description?: string | null;
           extracted_text?: string | null;
           deleted_at?: string | null;
+          assessment_id?: string | null;
+          kb_document_id?: string | null;
         };
         Relationships: [];
       };
@@ -735,6 +741,7 @@ export type Database = {
           created_by: string;
           created_at: string;
           updated_at: string;
+          student_id: string | null;
         };
         Insert: {
           id?: string;
@@ -755,6 +762,7 @@ export type Database = {
           created_by: string;
           created_at?: string;
           updated_at?: string;
+          student_id?: string | null;
         };
         Update: {
           title?: string;
@@ -766,6 +774,7 @@ export type Database = {
           processed_pages?: number;
           chunk_count?: number;
           error_message?: string | null;
+          student_id?: string | null;
         };
         Relationships: [];
       };
@@ -781,6 +790,7 @@ export type Database = {
           page_end: number | null;
           token_count: number | null;
           created_at: string;
+          student_id: string | null;
         };
         Insert: {
           id?: never;
@@ -794,6 +804,7 @@ export type Database = {
           token_count?: number | null;
           embedding: string;
           created_at?: string;
+          student_id?: string | null;
         };
         Update: never;
         Relationships: [];
@@ -1145,10 +1156,12 @@ export type Database = {
           query_embedding: string;
           query_text: string;
           p_tenant_id: string | null;
+          p_student_id?: string | null;
           match_count?: number;
           rrf_k?: number;
           semantic_weight?: number;
           full_text_weight?: number;
+          tenant_weight?: number;
         };
         Returns: {
           id: number;

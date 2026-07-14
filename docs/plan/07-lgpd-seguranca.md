@@ -105,10 +105,12 @@ Combinado com o fallback pinado e o `usage: { include: true }`, isso mantém o t
 
 Esta separação é uma **regra de arquitetura de conformidade** (decisão vinculante do projeto) e não deve ser relaxada sem revisão de LGPD.
 
-- A **base de conhecimento (`kb_documents`/`kb_chunks`)** é **conhecimento técnico** — livros, apostilas, materiais de Pilates/fisioterapia. É o único conteúdo que é **vetorizado** e indexado para busca semântica, e a base global é compartilhada entre todos os tenants (somente leitura).
-- Os **documentos de aluno** (exames, fotos posturais, laudos, termos) vivem em outro bucket (`student-documents`) e outra tabela (`documents`), com RLS estrita por tenant. **Nunca entram em `kb_chunks` e nunca são vetorizados.** O texto extraído deles (mesmo pipeline `unpdf`, campo `documents.extracted_text`, extraído no upload) é injetado **diretamente e só** no prompt da análise **daquele** aluno.
+- A **base de conhecimento (`kb_documents`/`kb_chunks`)** cobre **três escopos** (coluna `scope`): `global` (conhecimento técnico compartilhado entre tenants, só leitura), `tenant` (material do tenant) e `student` (anexos do próprio aluno — ver abaixo). Todo o conteúdo é **vetorizado** e indexado para busca semântica; a base global é compartilhada entre todos os tenants (somente leitura).
+- Os **documentos de aluno** (exames, fotos posturais, laudos, termos) vivem em outro bucket (`student-documents`) e outra tabela (`documents`), com RLS estrita por tenant. O texto extraído (campo `documents.extracted_text`, pipeline `unpdf` no upload) também é **vetorizado e ingerido em `kb_chunks`** com `scope='student'` + `student_id` (migration 0027), para a IA usar no plano de aula coletivo e no chat daquele aluno. O vínculo volta à `documents` via `documents.kb_document_id` (cascade apaga os chunks ao excluir o documento).
 
-O risco que essa fronteira previne é catastrófico: se dado de saúde de aluno fosse para `kb_chunks`, a busca híbrida de outro tenant — ou pior, a base global — poderia retorná-lo. Mantê-lo fora do índice vetorial garante, por construção, que dado de aluno **jamais** vaze via retrieval. Se no futuro um aluno acumular documentos demais para caber no contexto, a solução é uma tabela separada `student_doc_chunks` com `tenant_id + student_id` e RLS própria — decisão adiada de propósito, nunca misturar na KB.
+A separação entre escopos é garantida **por construção** na função `match_kb_chunks` (security invoker, RLS): um chunk `scope='student'` **só** é retornado quando a chamada passa `p_student_id` igual ao `student_id` do chunk **e** o `p_tenant_id` bate com o tenant do requisitante. Em buscas sem `p_student_id` (relatório individual do próprio aluno, dossiê coletivo sem aquele aluno), chunks de aluno **não aparecem**; a base global/tenant é filtrada por `tenant_id in user_tenant_ids()`. Assim, dado de saúde de um aluno **jamais** é recuperado por outro tenant ou pela base global — a fronteira é `scope + student_id + tenant_id`, não física.
+
+**Risco residual e mitigação:** ao contrário da fronteira física original (tabela separada), a separação por scope+RLS depende da corretude da `match_kb_chunks` e das policies. Mitigações: (a) a query RAG usa **só termos técnicos** (nomes de condições, não dados identificáveis), (b) a injeção no prompt é **por pseudônimo** (§3, §4), (c) `data_collection: 'deny'` no OpenRouter, (d) chunks de aluno herdam a retenção/exclusão dos `documents` (cascade via `kb_document_id`). **Alternativa mais forte** se a fronteira por scope vier a ser considerada insuficiente: migrar para uma tabela separada `student_doc_chunks` (`tenant_id + student_id`, RLS própria, função de match dedicada) — decisão adiada; a estrutura atual (`scope='student'` + `student_id` + índice `kb_chunks_student_idx`) facilita essa migração futura sem reembeddar.
 
 ---
 
@@ -252,8 +254,8 @@ Cada fase termina deployada e testável; os itens de conformidade abaixo são ga
 
 **Fase 5 — RAG**
 - [ ] Escrita de `kb_chunks` só por `service_role`; SELECT global-ou-tenant.
-- [ ] Fronteira KB × dado de aluno respeitada: documento de aluno **nunca** vetorizado (§5).
-- [ ] Teste: chunk de tenant A nunca aparece para B.
+- [ ] Fronteira KB × dado de aluno respeitada (§5): chunk `scope='student'` só retorna quando `p_student_id` bate e dentro do tenant; nunca aparece em busca global/tenant-only.
+- [ ] Teste: chunk de tenant A nunca aparece para B; chunk `scope='student'` do aluno X nunca aparece sem `p_student_id=X`.
 - [ ] Builder de query web só com termos técnicos (§4.2).
 
 **Fase 6 — Relatórios de IA**
@@ -286,6 +288,6 @@ Cada fase termina deployada e testável; os itens de conformidade abaixo são ga
 |---|---|---|
 | **Vazamento cross-tenant** (dado de saúde de aluna de A visto por B) | Crítico | RLS em 100% das tabelas + policies de Storage por prefixo; `service_role` só em pipelines com filtro de tenant revisado (checklist Fase 8); testes de isolamento desde a Fase 1; advisors a cada migration. |
 | **Dado sensível enviado à IA sem tratamento** | Crítico / legal | Pseudonimização obrigatória no builder de dossiê (regra de código, não convenção); `data_collection: 'deny'`; residência `sa-east-1`; consentimento bloqueante; suboperadores documentados; previews nunca contra produção. |
-| **Dado de aluno indexado na KB** | Crítico | Fronteira arquitetural §5: documento de aluno nunca entra em `kb_chunks`; texto extraído vai só ao prompt do próprio aluno. |
+| **Dado de aluno indexado na KB** | Crítico | Fronteira §5: chunk `scope='student'` em `kb_chunks` só é recuperado pela `match_kb_chunks` quando `p_student_id` bate e dentro do tenant (`security invoker`, RLS); nunca aparece em busca global/tenant-only. Query RAG só com termos técnicos; injeção por pseudônimo; `data_collection: 'deny'`; cascade de exclusão via `kb_document_id`. Alternativa de tabela separada (`student_doc_chunks`) mantida como evolução se a fronteira por scope for insuficiente. |
 | **Exclusão × dever de guarda COFFITO** | Médio / legal | Decisão informada da controladora; aviso explícito na UI antes de confirmar; plataforma não decide pela profissional. |
 | **Identificador direto na busca web** | Alto | Builder de query separado, só termos técnicos; regra de código (§4.2). |

@@ -123,6 +123,11 @@ export function TurmaForm({ turma }: { turma?: Turma }) {
           </Field>
         </div>
 
+        <p className="text-xs text-muted-foreground">
+          Ao definir dia e horário habituais, as próximas 8 ocorrências são geradas automaticamente
+          e aparecem na agenda. Você pode estender a qualquer momento na aba Aulas.
+        </p>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <Field>
             <FieldLabel htmlFor="maxStudents">Máximo de alunas</FieldLabel>
