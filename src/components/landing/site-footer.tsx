@@ -1,108 +1,109 @@
-import {
-  GithubLogoIcon,
-  InstagramLogoIcon,
-  LinkedinLogoIcon,
-} from "@phosphor-icons/react/dist/ssr";
+import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 import { LogoMarca } from "@/components/brand/logo";
+import { Reveal } from "@/components/motion";
+import { Button } from "@/components/ui/button";
 import { textos } from "@/lib/textos";
 
-const COLUNAS = [
-  {
-    titulo: textos.landing.footer.produto,
-    links: [
-      { href: "#recursos", label: textos.landing.footer.links.recursos },
-      { href: "#planos", label: textos.landing.footer.links.planos },
-      { href: "#como-funciona", label: textos.landing.footer.links.comoFunciona },
-      { href: "#faq", label: textos.landing.footer.links.perguntas },
-    ],
-  },
-  {
-    titulo: textos.landing.footer.empresa,
-    links: [
-      { href: "/privacidade", label: textos.landing.footer.links.sobre },
-      { href: "/privacidade", label: textos.landing.footer.links.contato },
-      { href: "/privacidade", label: textos.landing.footer.links.status },
-    ],
-  },
-  {
-    titulo: textos.landing.footer.legal,
-    links: [
-      { href: "/privacidade", label: textos.landing.footer.links.privacidade },
-      { href: "/privacidade", label: textos.landing.footer.links.termos },
-      { href: "/privacidade", label: textos.landing.footer.links.lgpd },
-      { href: "/privacidade", label: textos.landing.footer.links.cookies },
-    ],
-  },
-] as const;
+const t = textos.landing.footer;
 
+/**
+ * Fecho + rodapé.
+ *
+ * O fecho é uma faixa na cor da marca — a única superfície da landing onde o
+ * azul fala alto, no ponto de decisão. Absorve o antigo FinalCTA (que era um
+ * clone do hero) e mantém a honestidade que substituiu os depoimentos falsos.
+ *
+ * O rodapé lista só o que existe: sem Instagram/LinkedIn/GitHub apontando para
+ * a raiz de cada site, sem seis links institucionais todos indo para
+ * /privacidade. Um link falso destrói mais confiança do que quatro colunas
+ * constroem — e confiança é o produto.
+ */
 export function SiteFooter() {
   return (
-    <footer className="border-t border-border/60 bg-background">
-      <div className="mx-auto max-w-[1400px] px-6 py-12 sm:px-10 sm:py-16 lg:px-16">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
-          {/* Coluna de marca */}
-          <div className="lg:col-span-2">
-            <Link href="/" aria-label={textos.app.nome}>
-              <LogoMarca tamanho={32} />
+    <footer>
+      {/* Fecho colorido */}
+      <div className="relative overflow-hidden bg-brand-gradient text-primary-foreground">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.07]"
+          style={{
+            backgroundImage: "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)",
+            backgroundSize: "28px 28px",
+          }}
+        />
+        <Reveal className="relative mx-auto w-full max-w-4xl px-6 py-20 text-center sm:px-8 sm:py-28">
+          <h2 className="mx-auto max-w-[18ch] text-balance font-lp text-3xl font-semibold leading-[1.1] tracking-[-0.02em] sm:text-4xl lg:text-[2.75rem]">
+            {textos.landing.fecho.h2}
+          </h2>
+          <p className="mx-auto mt-5 max-w-xl text-pretty text-primary-foreground/85">
+            {textos.landing.fecho.honestidade}
+          </p>
+          <Button
+            asChild
+            size="lg"
+            className="group mt-8 h-12 gap-2 bg-primary-foreground px-7 text-base text-primary hover:bg-primary-foreground/90"
+          >
+            <Link href="/cadastro">
+              {textos.landing.identificacao.ctaPrimario}
+              <ArrowRightIcon
+                weight="bold"
+                className="size-4 transition-transform group-hover:translate-x-0.5"
+              />
             </Link>
-            <p className="mt-3 max-w-xs text-sm text-muted-foreground">{textos.app.tagline}</p>
-            <div className="mt-5 flex items-center gap-3 text-muted-foreground">
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noreferrer noopener"
-                className="rounded-md p-2 transition-colors hover:bg-muted hover:text-foreground"
-                aria-label="Instagram"
-              >
-                <InstagramLogoIcon className="size-4" weight="bold" />
-              </a>
-              <a
-                href="https://linkedin.com"
-                target="_blank"
-                rel="noreferrer noopener"
-                className="rounded-md p-2 transition-colors hover:bg-muted hover:text-foreground"
-                aria-label="LinkedIn"
-              >
-                <LinkedinLogoIcon className="size-4" weight="bold" />
-              </a>
-              <a
-                href="https://github.com"
-                target="_blank"
-                rel="noreferrer noopener"
-                className="rounded-md p-2 transition-colors hover:bg-muted hover:text-foreground"
-                aria-label="GitHub"
-              >
-                <GithubLogoIcon className="size-4" weight="bold" />
-              </a>
-            </div>
+          </Button>
+        </Reveal>
+      </div>
+
+      {/* Rodapé */}
+      <div className="border-t border-border/60 bg-background">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-12 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <div>
+            <Link
+              href="/"
+              aria-label={textos.app.nome}
+              className="inline-block rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+            >
+              <LogoMarca tamanho={28} />
+            </Link>
+            <p className="mt-3 text-xs text-muted-foreground">{t.feito}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t.copyright(new Date().getFullYear())}
+            </p>
           </div>
 
-          {/* Demais colunas */}
-          {COLUNAS.map((col) => (
-            <div key={col.titulo}>
-              <h3 className="text-sm font-semibold tracking-wide text-foreground">{col.titulo}</h3>
-              <ul className="mt-4 space-y-2.5 text-sm">
-                {col.links.map((l) => (
-                  <li key={l.label}>
-                    <Link
-                      href={l.href}
-                      className="text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      {l.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-border/60 pt-6 sm:flex-row sm:items-center">
-          <p className="text-xs text-muted-foreground">
-            {textos.landing.footer.copyright(new Date().getFullYear())}
-          </p>
-          <p className="text-xs text-muted-foreground">{textos.landing.footer.feito}</p>
+          <nav className="flex flex-wrap gap-x-8 gap-y-3 text-sm" aria-label="Rodapé">
+            <a
+              href="#relatorio"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {t.links.relatorio}
+            </a>
+            <a
+              href="#avaliacao"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {t.links.avaliacao}
+            </a>
+            <a
+              href="#planos"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {t.links.planos}
+            </a>
+            <a
+              href="#faq"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {t.links.perguntas}
+            </a>
+            <Link
+              href="/privacidade"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {t.links.privacidade}
+            </Link>
+          </nav>
         </div>
       </div>
     </footer>

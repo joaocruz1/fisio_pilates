@@ -10,8 +10,8 @@ import { textos } from "@/lib/textos";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
-  { href: "#recursos", label: textos.landing.nav.recursos },
-  { href: "#como-funciona", label: textos.landing.nav.comoFunciona },
+  { href: "#relatorio", label: textos.landing.nav.relatorio },
+  { href: "#avaliacao", label: textos.landing.nav.avaliacao },
   { href: "#planos", label: textos.landing.nav.planos },
   { href: "#faq", label: textos.landing.nav.faq },
 ];
@@ -35,17 +35,22 @@ export function NavPublic() {
   }, []);
 
   return (
+    // Transparente sobre o hero; ao rolar, ganha vidro fosco e uma borda sutil.
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-50 transition-all duration-300",
+        "fixed inset-x-0 top-0 z-50 transition-colors duration-200",
         scrolled
-          ? "border-b border-border/60 bg-background/85 backdrop-blur-md shadow-sm shadow-foreground/5"
-          : "bg-transparent",
+          ? "border-b border-border/60 bg-background/80 backdrop-blur-md"
+          : "border-b border-transparent bg-transparent",
       )}
     >
-      <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-6 sm:px-10 lg:px-16">
-        <Link href="/" aria-label={textos.app.nome}>
-          <LogoMarca tamanho={32} prioridade />
+      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6 sm:px-8">
+        <Link
+          href="/"
+          aria-label={textos.app.nome}
+          className="-ml-px rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+        >
+          <LogoMarca tamanho={30} prioridade />
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex" aria-label="Navegação principal">
@@ -53,7 +58,7 @@ export function NavPublic() {
             <a
               key={l.href}
               href={l.href}
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="relative text-sm text-muted-foreground transition-colors after:absolute after:inset-x-0 after:-bottom-1.5 after:h-px after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200 hover:text-foreground hover:after:scale-x-100 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring motion-reduce:after:transition-none"
             >
               {l.label}
             </a>
@@ -61,13 +66,14 @@ export function NavPublic() {
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
-          {/* Sem persistir: visitante anônimo não tem conta para salvar. */}
+          {/* Sem persistir: visitante anônimo não tem conta para salvar. A action
+              chamaria requireTenant() e redirecionaria. */}
           <ThemeToggle />
           <Button asChild variant="ghost" size="sm">
             <Link href="/login">{textos.landing.nav.entrar}</Link>
           </Button>
-          <Button asChild size="sm" className="rounded-full px-5">
-            <Link href="/cadastro">{textos.landing.nav.comecarGratis}</Link>
+          <Button asChild size="sm" className="h-9 px-4">
+            <Link href="/cadastro">{textos.landing.nav.criarConta}</Link>
           </Button>
         </div>
 
@@ -76,7 +82,7 @@ export function NavPublic() {
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
-            className="inline-flex size-10 items-center justify-center rounded-lg text-foreground"
+            className="inline-flex size-11 items-center justify-center rounded-md text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             aria-label={open ? textos.landing.nav.fecharMenu : textos.landing.nav.abrirMenu}
             aria-expanded={open}
             aria-controls="mobile-nav"
@@ -87,12 +93,9 @@ export function NavPublic() {
       </div>
 
       {open && (
-        <div
-          id="mobile-nav"
-          className="border-t border-border/60 bg-background/95 backdrop-blur md:hidden"
-        >
+        <div id="mobile-nav" className="border-t border-border/60 bg-background md:hidden">
           <nav
-            className="mx-auto flex max-w-[1400px] flex-col gap-1 px-6 py-3"
+            className="mx-auto flex w-full max-w-6xl flex-col gap-0.5 px-4 py-2 sm:px-6"
             aria-label="Navegação mobile"
           >
             {NAV_LINKS.map((l) => (
@@ -100,17 +103,17 @@ export function NavPublic() {
                 key={l.href}
                 href={l.href}
                 onClick={() => setOpen(false)}
-                className="rounded-lg px-3 py-2 text-sm text-foreground/80 transition-colors hover:bg-muted"
+                className="rounded-md px-3 py-3 text-sm text-foreground/80 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
               >
                 {l.label}
               </a>
             ))}
-            <div className="mt-2 flex flex-col gap-2 border-t border-border/60 pt-3">
-              <Button asChild variant="outline" size="sm">
+            <div className="mt-2 flex flex-col gap-2 border-t border-lp-fio px-3 pb-2 pt-3">
+              <Button asChild variant="outline" className="h-11">
                 <Link href="/login">{textos.landing.nav.entrar}</Link>
               </Button>
-              <Button asChild size="sm" className="rounded-full">
-                <Link href="/cadastro">{textos.landing.nav.comecarGratis}</Link>
+              <Button asChild className="h-11">
+                <Link href="/cadastro">{textos.landing.nav.criarConta}</Link>
               </Button>
             </div>
           </nav>

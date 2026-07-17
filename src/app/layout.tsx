@@ -1,45 +1,59 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, JetBrains_Mono, Sora } from "next/font/google";
+import { Geist, JetBrains_Mono, Sora } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { textos } from "@/lib/textos";
 import { cn } from "@/lib/utils";
 
-const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
+/**
+ * Sora e JetBrains Mono vivem no root porque (app), admin, (auth) e (print)
+ * dependem das duas — replicá-las em seis layouts seria pior.
+ *
+ * Mas `preload: false`: a landing é a única rota pública, e ela não casa
+ * nenhuma das duas (os headings dela são Archivo, ver (site)/layout.tsx). Sem
+ * isto, todo visitante de primeira viagem baixava 64 KB de fonte que a página
+ * nunca usa — no celular, no 4G, que é exatamente o cenário do público. As duas
+ * continuam disponíveis: o CSS ainda as referencia e o browser as busca quando
+ * a área logada de fato as casa; o que sai é só a dica de preload.
+ */
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  preload: false,
+});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 // Fonte de display para títulos (headings) — mais personalidade que a de corpo.
+// A landing não usa esta: instancia a Archivo no próprio layout, para que a
+// troca de voz não vaze para a área logada. Ver src/app/(site)/layout.tsx.
 const sora = Sora({
   variable: "--font-display",
   subsets: ["latin"],
   weight: ["500", "600", "700"],
+  preload: false,
 });
 
 export const metadata: Metadata = {
   title: {
-    default: `${textos.app.nome} · ${textos.app.tagline}`,
+    default: textos.landing.meta.titulo,
     template: `%s · ${textos.app.nome}`,
   },
-  description: textos.landing.hero.sub,
+  // Escrita para caber no SERP (163 chars). A descrição anterior reusava o
+  // subtítulo do hero, que tinha 190 e era cortada no meio de uma oração.
+  description: textos.landing.meta.descricao,
   applicationName: textos.app.nome,
   keywords: [
     "fisioterapia",
     "pilates",
     "gestão de alunos",
     "relatório de evolução",
-    "inteligência artificial",
+    "avaliação postural",
     "LGPD",
-    "RAG",
     "fisioterapeuta autônoma",
   ],
   authors: [{ name: textos.app.nome }],
@@ -50,13 +64,13 @@ export const metadata: Metadata = {
     locale: "pt_BR",
     url: "/",
     siteName: textos.app.nome,
-    title: `${textos.app.nome} · ${textos.app.tagline}`,
-    description: textos.landing.hero.sub,
+    title: textos.landing.meta.titulo,
+    description: textos.landing.meta.descricao,
   },
   twitter: {
     card: "summary_large_image",
-    title: `${textos.app.nome} · ${textos.app.tagline}`,
-    description: textos.landing.hero.sub,
+    title: textos.landing.meta.titulo,
+    description: textos.landing.meta.descricao,
   },
   robots: {
     index: true,
@@ -80,7 +94,6 @@ export default function RootLayout({
         "h-full",
         "antialiased",
         geistSans.variable,
-        geistMono.variable,
         jetbrainsMono.variable,
         sora.variable,
       )}
