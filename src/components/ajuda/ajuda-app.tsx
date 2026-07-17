@@ -108,7 +108,7 @@ export function AjudaApp({ primeiroAlunoId = null }: { primeiroAlunoId?: string 
         </span>
         <h1 className="font-heading text-xl font-semibold">Central de Ajuda</h1>
         <p className="max-w-md text-sm text-muted-foreground">
-          Pergunte qualquer coisa sobre como usar o FisioPilates, ou refaça o tour guiado.
+          Pergunte qualquer coisa sobre como usar o FísioPilates, ou refaça o tour guiado.
         </p>
         <Button onClick={start} className="mt-1">
           <PlayCircleIcon className="size-4" weight="fill" /> Refazer o tour guiado

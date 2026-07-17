@@ -286,7 +286,7 @@ export function ModalAgendamento({
               asChild
               size="sm"
               variant="ghost"
-              className="ml-auto text-emerald-600 hover:text-emerald-700"
+              className="ml-auto text-success hover:text-success/80"
             >
               <a href={linkWa} target="_blank" rel="noopener noreferrer">
                 <WhatsappLogoIcon className="size-4" weight="fill" /> Lembrar

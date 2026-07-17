@@ -16,7 +16,7 @@ export function getStripe(): Stripe {
     apiVersion: "2025-02-24.acacia" as Stripe.LatestApiVersion,
     typescript: true,
     appInfo: {
-      name: "FisioPilates",
+      name: "FísioPilates",
       version: "1.0.0",
     },
   });

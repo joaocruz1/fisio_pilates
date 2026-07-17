@@ -6,8 +6,8 @@ import type { KbEscopoStats } from "@/server/knowledge";
 
 const COR_POR_NIVEL: Record<string, string> = {
   Vazia: "bg-muted-foreground/40",
-  Iniciante: "bg-amber-400",
-  Boa: "bg-sky-400",
+  Iniciante: "bg-warning",
+  Boa: "bg-info",
   Rica: "bg-primary",
   Completa: "bg-brand-gradient",
 };

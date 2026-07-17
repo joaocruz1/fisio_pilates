@@ -7,7 +7,10 @@
  */
 export const textos = {
   app: {
-    nome: "FisioPilates",
+    nome: "FísioPilates",
+    /** Partes do wordmark bicolor da logo ("Físio" azul-céu + "Pilates" marinho). */
+    nomeParte1: "Físio",
+    nomeParte2: "Pilates",
     tagline: "Gestão de alunos e evolução no Pilates com apoio de IA",
   },
   nav: {
@@ -33,6 +36,16 @@ export const textos = {
     planoEscolhidoTitulo: "Plano selecionado:",
     planoEscolhidoDesc: "Você poderá concluir a assinatura após criar a conta.",
   },
+  tema: {
+    titulo: "Aparência",
+    descricao: "Escolha como o FísioPilates aparece para você. A preferência acompanha sua conta.",
+    rotulo: "Tema",
+    alternar: "Mudar tema",
+    claro: "Claro",
+    escuro: "Escuro",
+    sistema: "Sistema",
+    erros: { salvar: "Não foi possível salvar sua preferência de tema." },
+  },
   ia: {
     disclaimer:
       "Esta análise é gerada por inteligência artificial como apoio à sua avaliação profissional. " +
@@ -45,7 +58,7 @@ export const textos = {
     semAssinatura:
       "Você está no plano gratuito. Faça upgrade para liberar mais alunas, mensagens e relatórios.",
     semCobranca: "Sem cobrança",
-    cortesia: "Plano Vitalício (cortesia)",
+    cortesia: "Plano Premium ativo — acesso completo liberado, sem limites.",
     gratis: "Grátis",
     trial: (dias: number) => `Trial de ${dias} dias`,
     trialTerminaEm: (data: string) =>
@@ -414,7 +427,7 @@ export const textos = {
         cookies: "Cookies",
         status: "Status do sistema",
       },
-      copyright: (ano: number) => `© ${ano} FisioPilates. Todos os direitos reservados.`,
+      copyright: (ano: number) => `© ${ano} FísioPilates. Todos os direitos reservados.`,
       feito: "Feito com cuidado no Brasil.",
     },
   },

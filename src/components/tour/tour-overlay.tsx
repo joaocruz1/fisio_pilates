@@ -28,10 +28,10 @@ export function TourOverlay({ rect }: { rect: DOMRect | null }) {
         height: rect.height + PAD * 2,
       }}
       transition={{ type: "spring", stiffness: 300, damping: 32 }}
-      style={{ boxShadow: "0 0 0 9999px rgba(2, 6, 23, 0.62)" }}
+      style={{ boxShadow: "0 0 0 9999px var(--overlay)" }}
     />
   ) : (
-    <div aria-hidden className="fixed inset-0 z-40 bg-[rgba(2,6,23,0.62)]" />
+    <div aria-hidden className="fixed inset-0 z-40 bg-overlay" />
   );
 
   return createPortal(

@@ -227,13 +227,14 @@ function MockupVision() {
                 className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-primary/60 mix-blend-difference"
                 aria-hidden
               />
-              {/* Pontos posturais (destaques visuais) */}
+              {/* Pontos posturais. Cor fixa (não token): o fundo é a foto, que não
+                  muda com o tema — mas fica na família azul da marca. */}
               <span
-                className="absolute left-[58%] top-[20%] size-2 rounded-full bg-cyan-300 shadow-[0_0_0_3px_rgba(34,211,238,0.35)]"
+                className="absolute left-[58%] top-[20%] size-2 rounded-full bg-[oklch(0.78_0.13_235)] shadow-[0_0_0_3px_oklch(0.61_0.155_245.5_/_0.35)]"
                 aria-hidden
               />
               <span
-                className="absolute left-[55%] top-[55%] size-2 rounded-full bg-cyan-300 shadow-[0_0_0_3px_rgba(34,211,238,0.35)]"
+                className="absolute left-[55%] top-[55%] size-2 rounded-full bg-[oklch(0.78_0.13_235)] shadow-[0_0_0_3px_oklch(0.61_0.155_245.5_/_0.35)]"
                 aria-hidden
               />
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2">
@@ -244,7 +245,7 @@ function MockupVision() {
         </div>
         <div className="space-y-2 border-t border-border/60 p-4 text-xs">
           <div className="flex items-center gap-2 font-semibold text-foreground">
-            <span className="inline-block size-1.5 rounded-full bg-cyan-400" />
+            <span className="inline-block size-1.5 rounded-full bg-info" />
             Achados
           </div>
           <p className="text-muted-foreground">

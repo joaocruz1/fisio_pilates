@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, JetBrains_Mono, Sora } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { textos } from "@/lib/textos";
 import { cn } from "@/lib/utils";
@@ -69,8 +70,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+    // suppressHydrationWarning: o script inline do next-themes muda a class do
+    // <html> antes da hidratação. O flag tem profundidade 1 — cobre só o <html>,
+    // não a árvore.
     <html
       lang="pt-BR"
+      suppressHydrationWarning
       className={cn(
         "h-full",
         "antialiased",
@@ -81,7 +86,10 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-full flex flex-col">
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
+        {/* Fora do ThemeProvider de propósito: o Toaster não deve poder ser
+            remontado por troca de tema — remontar reinicia os timers de
+            auto-dismiss dos toasts. Ver o comentário em ui/sonner.tsx. */}
         <Toaster richColors position="top-center" />
       </body>
     </html>

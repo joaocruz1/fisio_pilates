@@ -1,8 +1,10 @@
 "use client";
 
-import { ListIcon, SparkleIcon, XIcon } from "@phosphor-icons/react/dist/ssr";
+import { ListIcon, XIcon } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { LogoMarca } from "@/components/brand/logo";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { textos } from "@/lib/textos";
 import { cn } from "@/lib/utils";
@@ -42,14 +44,8 @@ export function NavPublic() {
       )}
     >
       <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-6 sm:px-10 lg:px-16">
-        <Link
-          href="/"
-          className="flex items-center gap-2 font-heading text-lg font-semibold tracking-tight"
-        >
-          <span className="flex size-8 items-center justify-center rounded-lg bg-brand-gradient text-primary-foreground">
-            <SparkleIcon weight="fill" className="size-4" />
-          </span>
-          <span>{textos.app.nome}</span>
+        <Link href="/" aria-label={textos.app.nome}>
+          <LogoMarca tamanho={32} prioridade />
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex" aria-label="Navegação principal">
@@ -65,6 +61,8 @@ export function NavPublic() {
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
+          {/* Sem persistir: visitante anônimo não tem conta para salvar. */}
+          <ThemeToggle />
           <Button asChild variant="ghost" size="sm">
             <Link href="/login">{textos.landing.nav.entrar}</Link>
           </Button>
@@ -73,16 +71,19 @@ export function NavPublic() {
           </Button>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          className="inline-flex size-10 items-center justify-center rounded-lg text-foreground md:hidden"
-          aria-label={open ? textos.landing.nav.fecharMenu : textos.landing.nav.abrirMenu}
-          aria-expanded={open}
-          aria-controls="mobile-nav"
-        >
-          {open ? <XIcon className="size-5" /> : <ListIcon className="size-5" />}
-        </button>
+        <div className="flex items-center gap-1 md:hidden">
+          <ThemeToggle />
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            className="inline-flex size-10 items-center justify-center rounded-lg text-foreground"
+            aria-label={open ? textos.landing.nav.fecharMenu : textos.landing.nav.abrirMenu}
+            aria-expanded={open}
+            aria-controls="mobile-nav"
+          >
+            {open ? <XIcon className="size-5" /> : <ListIcon className="size-5" />}
+          </button>
+        </div>
       </div>
 
       {open && (
