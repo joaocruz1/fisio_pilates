@@ -34,6 +34,7 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
+  --color-overlay: var(--overlay);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -55,7 +56,8 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* ===== Tema claro "clínico premium" (azul + verde-água) ===== */
+/* ===== Tema claro "clínico premium" — paleta da marca FísioPilates =====
+   Azul-céu #0089d9 → azul-marinho #005090 (gradiente do símbolo da logo). */
 :root {
   --background: oklch(0.99 0.004 240);
   --foreground: oklch(0.24 0.03 255);
@@ -64,16 +66,16 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.24 0.03 255);
 
-  --primary: oklch(0.55 0.15 255);
+  --primary: oklch(0.52 0.13 243);
   --primary-foreground: oklch(0.99 0.01 240);
 
-  --secondary: oklch(0.96 0.015 250);
-  --secondary-foreground: oklch(0.34 0.07 255);
+  --secondary: oklch(0.96 0.015 248);
+  --secondary-foreground: oklch(0.34 0.07 250);
 
-  --muted: oklch(0.965 0.008 250);
-  --muted-foreground: oklch(0.52 0.03 255);
+  --muted: oklch(0.965 0.008 248);
+  --muted-foreground: oklch(0.52 0.03 250);
 
-  --accent: oklch(0.95 0.03 210);
+  --accent: oklch(0.94 0.04 237);
   --accent-foreground: oklch(0.35 0.09 245);
 
   --destructive: oklch(0.58 0.21 25);
@@ -87,9 +89,9 @@
 
   --border: oklch(0.92 0.01 250);
   --input: oklch(0.92 0.01 250);
-  --ring: oklch(0.55 0.15 255);
+  --ring: oklch(0.52 0.13 243);
 
-  --chart-1: oklch(0.6 0.16 255);
+  --chart-1: oklch(0.61 0.155 246);
   --chart-2: oklch(0.68 0.13 190);
   --chart-3: oklch(0.64 0.15 155);
   --chart-4: oklch(0.76 0.15 72);
@@ -99,54 +101,94 @@
 
   --sidebar: oklch(0.99 0.005 250);
   --sidebar-foreground: oklch(0.3 0.03 255);
-  --sidebar-primary: oklch(0.55 0.15 255);
+  --sidebar-primary: oklch(0.52 0.13 243);
   --sidebar-primary-foreground: oklch(0.99 0.01 240);
-  --sidebar-accent: oklch(0.95 0.03 245);
-  --sidebar-accent-foreground: oklch(0.4 0.1 255);
+  --sidebar-accent: oklch(0.95 0.03 243);
+  --sidebar-accent-foreground: oklch(0.4 0.1 248);
   --sidebar-border: oklch(0.92 0.01 250);
-  --sidebar-ring: oklch(0.55 0.15 255);
+  --sidebar-ring: oklch(0.52 0.13 243);
 
-  /* Gradientes de marca */
-  --gradient-brand: linear-gradient(135deg, oklch(0.55 0.15 255), oklch(0.66 0.13 205));
-  --gradient-soft: linear-gradient(135deg, oklch(0.97 0.02 250), oklch(0.97 0.03 195));
+  /* Gradientes de marca (azul-céu → azul-marinho, como no símbolo da logo) */
+  --gradient-brand: linear-gradient(135deg, oklch(0.61 0.155 245.5), oklch(0.427 0.125 251));
+  --gradient-soft: linear-gradient(135deg, oklch(0.97 0.02 245), oklch(0.965 0.03 232));
+
+  /* Scrim de modais e do tour. No escuro precisa ser mais opaco, não menos:
+     sobra pouca faixa dinâmica abaixo de um fundo já escuro. */
+  --overlay: oklch(0.2 0.03 258 / 0.35);
 }
 
+/* ===== Tema escuro =====
+   No escuro a elevação se comunica por luminância, não por sombra (sombra some
+   em fundo escuro). Daí a escada: background < sidebar < card < popover. */
 .dark {
-  --background: oklch(0.2 0.02 255);
-  --foreground: oklch(0.98 0.005 240);
-  --card: oklch(0.24 0.025 255);
-  --card-foreground: oklch(0.98 0.005 240);
-  --popover: oklch(0.24 0.025 255);
-  --popover-foreground: oklch(0.98 0.005 240);
-  --primary: oklch(0.7 0.14 250);
-  --primary-foreground: oklch(0.2 0.03 255);
-  --secondary: oklch(0.3 0.03 255);
-  --secondary-foreground: oklch(0.98 0.005 240);
-  --muted: oklch(0.3 0.03 255);
-  --muted-foreground: oklch(0.72 0.02 250);
-  --accent: oklch(0.34 0.05 235);
-  --accent-foreground: oklch(0.98 0.005 240);
+  --background: oklch(0.165 0.018 256);
+  --foreground: oklch(0.97 0.006 240);
+  --card: oklch(0.215 0.022 255);
+  --card-foreground: oklch(0.97 0.006 240);
+  --popover: oklch(0.255 0.024 255);
+  --popover-foreground: oklch(0.97 0.006 240);
+  --primary: oklch(0.7 0.13 243);
+  --primary-foreground: oklch(0.18 0.03 255);
+  --secondary: oklch(0.275 0.026 255);
+  --secondary-foreground: oklch(0.95 0.008 240);
+  --muted: oklch(0.265 0.024 255);
+  --muted-foreground: oklch(0.72 0.022 250);
+  --accent: oklch(0.32 0.05 240);
+  --accent-foreground: oklch(0.96 0.01 240);
   --destructive: oklch(0.7 0.19 22);
-  --destructive-foreground: oklch(0.99 0.01 25);
+  /* Escuro sobre o vermelho claro do dark. Era 0.99 (≈2.8:1, ilegível) — o
+     mesmo padrão que success/warning/info já seguiam. */
+  --destructive-foreground: oklch(0.2 0.03 25);
   --success: oklch(0.72 0.13 158);
   --success-foreground: oklch(0.2 0.03 158);
   --warning: oklch(0.8 0.14 75);
   --warning-foreground: oklch(0.24 0.06 75);
   --info: oklch(0.7 0.12 235);
   --info-foreground: oklch(0.2 0.03 235);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.7 0.14 250);
-  --sidebar: oklch(0.24 0.025 255);
-  --sidebar-foreground: oklch(0.98 0.005 240);
-  --sidebar-primary: oklch(0.7 0.14 250);
-  --sidebar-primary-foreground: oklch(0.2 0.03 255);
-  --sidebar-accent: oklch(0.34 0.05 235);
-  --sidebar-accent-foreground: oklch(0.98 0.005 240);
-  --sidebar-border: oklch(1 0 0 / 12%);
-  --sidebar-ring: oklch(0.7 0.14 250);
-  --gradient-brand: linear-gradient(135deg, oklch(0.55 0.15 255), oklch(0.62 0.13 205));
-  --gradient-soft: linear-gradient(135deg, oklch(0.28 0.04 255), oklch(0.3 0.04 205));
+  /* Sólidos, não alpha: branco translúcido renderiza uma cor diferente sobre
+     cada superfície da escada acima. */
+  --border: oklch(0.31 0.024 255);
+  --input: oklch(0.36 0.026 255);
+  --ring: oklch(0.7 0.13 243);
+  --chart-1: oklch(0.7 0.14 246);
+  --chart-2: oklch(0.76 0.12 190);
+  --chart-3: oklch(0.74 0.13 155);
+  --chart-4: oklch(0.8 0.14 72);
+  --chart-5: oklch(0.68 0.16 300);
+  --sidebar: oklch(0.19 0.02 256);
+  --sidebar-foreground: oklch(0.93 0.008 240);
+  --sidebar-primary: oklch(0.7 0.13 243);
+  --sidebar-primary-foreground: oklch(0.18 0.03 255);
+  --sidebar-accent: oklch(0.3 0.05 240);
+  --sidebar-accent-foreground: oklch(0.97 0.006 240);
+  --sidebar-border: oklch(0.28 0.022 255);
+  --sidebar-ring: oklch(0.7 0.13 243);
+  --gradient-brand: linear-gradient(135deg, oklch(0.66 0.15 245.5), oklch(0.47 0.13 249));
+  --gradient-soft: linear-gradient(135deg, oklch(0.26 0.035 250), oklch(0.28 0.038 235));
+  --overlay: oklch(0.1 0.02 258 / 0.65);
+}
+
+/* ===== Rota de impressão: papel é branco =====
+   Redeclara os tokens claros no escopo do wrapper, neutralizando o .dark do
+   <html> por cascata. Não adianta usar class="light": o @custom-variant dark
+   casa por ANCESTRAL (&:is(.dark *)), então tudo aqui dentro continuaria
+   descendente de .dark e os utilitários dark:* seguiriam ativos. */
+[data-force-light] {
+  --background: oklch(0.99 0.004 240);
+  --foreground: oklch(0.24 0.03 255);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.24 0.03 255);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.24 0.03 255);
+  --muted: oklch(0.965 0.008 248);
+  --muted-foreground: oklch(0.52 0.03 250);
+  --border: oklch(0.92 0.01 250);
+  --input: oklch(0.92 0.01 250);
+  --chart-1: oklch(0.61 0.155 246);
+  --chart-2: oklch(0.68 0.13 190);
+  --chart-3: oklch(0.64 0.15 155);
+  --chart-4: oklch(0.76 0.15 72);
+  --chart-5: oklch(0.56 0.17 300);
 }
 
 @layer base {
@@ -180,5 +222,18 @@
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+  }
+  /* Cores fixas do wordmark da logo ("Físio" azul-céu, "Pilates" marinho) */
+  .text-brand-sky {
+    color: oklch(0.61 0.155 245.5);
+  }
+  .text-brand-navy {
+    color: oklch(0.427 0.125 251);
+  }
+  .dark .text-brand-sky {
+    color: oklch(0.72 0.13 243);
+  }
+  .dark .text-brand-navy {
+    color: oklch(0.93 0.02 245);
   }
 }

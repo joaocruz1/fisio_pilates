@@ -2,9 +2,9 @@ import {
   GithubLogoIcon,
   InstagramLogoIcon,
   LinkedinLogoIcon,
-  SparkleIcon,
 } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
+import { LogoMarca } from "@/components/brand/logo";
 import { textos } from "@/lib/textos";
 
 const COLUNAS = [
@@ -43,14 +43,8 @@ export function SiteFooter() {
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
           {/* Coluna de marca */}
           <div className="lg:col-span-2">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 font-heading text-lg font-semibold"
-            >
-              <span className="flex size-8 items-center justify-center rounded-lg bg-brand-gradient text-primary-foreground">
-                <SparkleIcon weight="fill" className="size-4" />
-              </span>
-              <span>{textos.app.nome}</span>
+            <Link href="/" aria-label={textos.app.nome}>
+              <LogoMarca tamanho={32} />
             </Link>
             <p className="mt-3 max-w-xs text-sm text-muted-foreground">{textos.app.tagline}</p>
             <div className="mt-5 flex items-center gap-3 text-muted-foreground">

@@ -11,12 +11,12 @@ import { SocialProof } from "@/components/landing/social-proof";
 import { Testimonials } from "@/components/landing/testimonials";
 
 /**
- * Landing pública do FisioPilates. Renderizada como RSC: tudo é server-rendered
- * exceto a cena 3D do hero, que é client-only via `dynamic({ ssr: false })`.
+ * Landing pública do FísioPilates. Renderizada como RSC: tudo é server-rendered
+ * exceto o nav e o hero, que são client (scroll state + framer-motion).
  *
  * Seções (em ordem):
  *   1. NavPublic (client)               — fixa, transparente → sólida
- *   2. Hero (client)                    — copy + cena 3D R3F
+ *   2. Hero (client)                    — copy + composição da marca (curva da logo)
  *   3. SocialProof                      — strip de selos LGPD/Brasil
  *   4. FeaturesGrid                     — 9 features em 3×3
  *   5. FeatureDetail                    — 3 blocos detalhados

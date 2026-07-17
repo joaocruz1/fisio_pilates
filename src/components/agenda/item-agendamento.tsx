@@ -181,8 +181,7 @@ export function ItemAgendamento({
           </DropdownMenuItem>
           {linkWa && !cancelada ? (
             <DropdownMenuItem onSelect={() => window.open(linkWa, "_blank", "noopener,noreferrer")}>
-              <WhatsappLogoIcon className="size-4 text-emerald-600" weight="fill" /> Lembrar no
-              WhatsApp
+              <WhatsappLogoIcon className="size-4 text-success" weight="fill" /> Lembrar no WhatsApp
             </DropdownMenuItem>
           ) : null}
           <DropdownMenuSeparator />

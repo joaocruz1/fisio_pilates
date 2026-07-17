@@ -1,5 +1,6 @@
 import { CheckCircleIcon } from "@phosphor-icons/react/dist/ssr";
 import { CheckoutButtonPublic } from "@/components/billing/checkout-button-public";
+import { SectionHeading } from "@/components/landing/section-heading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -17,17 +18,12 @@ export function ComparativoPublic() {
   return (
     <section id="planos" className="bg-muted/30 py-20 sm:py-28">
       <div className="mx-auto max-w-[1400px] px-6 sm:px-10 lg:px-16">
-        <div className="mb-12 flex flex-col items-center gap-3 text-center sm:mb-16">
-          <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium uppercase tracking-wider text-primary">
-            {textos.landing.planos.eyebrow}
-          </span>
-          <h2 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
-            {textos.landing.planos.titulo}
-          </h2>
-          <p className="max-w-2xl text-base text-muted-foreground sm:text-lg">
-            {textos.landing.planos.subtitulo}
-          </p>
-        </div>
+        <SectionHeading
+          eyebrow={textos.landing.planos.eyebrow}
+          titulo={textos.landing.planos.titulo}
+          subtitulo={textos.landing.planos.subtitulo}
+          className="mb-12 sm:mb-16"
+        />
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           {ORDEM.map((id) => (
@@ -53,14 +49,15 @@ function PlanoCard({ id }: { id: PlanId }) {
     <Card
       className={cn(
         "relative flex h-full flex-col",
+        // Card tem overflow-hidden por padrão; o badge "mais popular" vaza pelo topo.
         isDestaque
-          ? "border-2 border-primary shadow-xl shadow-primary/10 ring-1 ring-primary/20"
+          ? "overflow-visible border-2 border-primary shadow-xl shadow-primary/10 ring-1 ring-primary/20"
           : "border-border/60",
       )}
     >
       {isDestaque && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <Badge className="bg-brand-gradient px-3 py-1 text-xs font-semibold text-primary-foreground shadow-md shadow-primary/20">
+          <Badge className="h-auto bg-brand-gradient px-3 py-1 text-xs font-semibold text-primary-foreground shadow-md shadow-primary/20">
             {textos.landing.planos.badgeMaisPopular}
           </Badge>
         </div>

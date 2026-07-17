@@ -50,7 +50,7 @@ export function WelcomeOnboarding({ nome, pending }: { nome: string; pending: bo
             {primeiro ? `Bem-vinda, ${primeiro}!` : "Bem-vinda!"}
           </h2>
           <p className="text-sm text-primary-foreground/90">
-            Vou te mostrar, em poucos minutos, como usar cada parte do FisioPilates.
+            Vou te mostrar, em poucos minutos, como usar cada parte do FísioPilates.
           </p>
         </div>
 

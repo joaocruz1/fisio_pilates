@@ -13,10 +13,11 @@ import {
   UsersThreeIcon,
 } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LogoMarca } from "@/components/brand/logo";
 import { UserMenu } from "@/components/layout/user-menu";
+import { ThemeSync } from "@/components/theme/theme-sync";
 import { TourProvider } from "@/components/tour/tour-provider";
 import { WelcomeOnboarding } from "@/components/tour/welcome-onboarding";
 import { textos } from "@/lib/textos";
@@ -42,16 +43,8 @@ function isActive(pathname: string, href: string) {
 
 function Marca() {
   return (
-    <Link href="/dashboard" className="flex items-center gap-2 px-1">
-      <Image
-        src="/logo.png"
-        alt=""
-        width={32}
-        height={32}
-        priority
-        className="size-8 rounded-lg shadow-sm shadow-primary/20"
-      />
-      <span className="font-heading text-lg font-semibold tracking-tight">{textos.app.nome}</span>
+    <Link href="/dashboard" className="flex items-center px-1" aria-label={textos.app.nome}>
+      <LogoMarca tamanho={32} prioridade />
     </Link>
   );
 }
@@ -60,17 +53,20 @@ export function AppShell({
   userName,
   tourPending = false,
   primeiroAlunoId = null,
+  temaDaConta = null,
   children,
 }: {
   userName: string;
   tourPending?: boolean;
   primeiroAlunoId?: string | null;
+  temaDaConta?: string | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
 
   return (
     <TourProvider alunoId={primeiroAlunoId}>
+      <ThemeSync temaDaConta={temaDaConta} />
       <WelcomeOnboarding nome={userName} pending={tourPending} />
       <div className="flex min-h-svh flex-col md:flex-row">
         {/* Sidebar (desktop) */}

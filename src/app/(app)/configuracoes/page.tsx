@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AlterarSenhaForm } from "@/components/configuracoes/alterar-senha-form";
 import { ModeloForm } from "@/components/configuracoes/modelo-form";
 import { PerfilForm } from "@/components/configuracoes/perfil-form";
+import { TemaForm } from "@/components/configuracoes/tema-form";
 import { ExcluirConta } from "@/components/lgpd/excluir-conta";
 import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -65,6 +66,16 @@ export default async function ConfiguracoesPage() {
           </CardHeader>
           <CardContent>
             <Badge variant="secondary">Gratuito</Badge>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{textos.tema.titulo}</CardTitle>
+            <CardDescription>{textos.tema.descricao}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TemaForm />
           </CardContent>
         </Card>
 

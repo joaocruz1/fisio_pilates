@@ -223,12 +223,7 @@ function CardDia({
           <Link href={`/alunos/${ag.student_id}/evolucao`}>Evolução</Link>
         </Button>
         {linkWa && status !== "cancelled" ? (
-          <Button
-            asChild
-            size="sm"
-            variant="ghost"
-            className="text-emerald-600 hover:text-emerald-700"
-          >
+          <Button asChild size="sm" variant="ghost" className="text-success hover:text-success/80">
             <a href={linkWa} target="_blank" rel="noopener noreferrer">
               <WhatsappLogoIcon className="size-4" weight="fill" /> Lembrar
             </a>

@@ -1,31 +1,16 @@
 "use client";
 
-import { ShieldCheckIcon } from "@phosphor-icons/react/dist/ssr";
+import {
+  CheckCircleIcon,
+  ShieldCheckIcon,
+  SparkleIcon,
+  TrendUpIcon,
+} from "@phosphor-icons/react/dist/ssr";
 import { motion, useReducedMotion } from "framer-motion";
-import dynamic from "next/dynamic";
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { textos } from "@/lib/textos";
-
-const SceneHero3D = dynamic(
-  () => import("@/components/landing/scene-hero-3d-wrapper").then((m) => m.SceneHero3D),
-  { ssr: false, loading: () => <Hero3DPlaceholder /> },
-);
-
-function Hero3DPlaceholder() {
-  return (
-    <div className="relative aspect-square w-full overflow-hidden rounded-3xl border border-border/60 bg-card">
-      <div
-        className="pointer-events-none absolute -top-12 -right-12 size-48 rounded-full bg-primary/20 blur-3xl"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute -bottom-12 -left-12 size-56 rounded-full bg-accent/30 blur-3xl"
-        aria-hidden
-      />
-    </div>
-  );
-}
 
 export function Hero() {
   const reduced = useReducedMotion();
@@ -101,16 +86,144 @@ export function Hero() {
           </div>
         </motion.div>
 
-        {/* Cena 3D */}
+        {/* Composição da marca */}
         <motion.div
-          initial={reduced ? false : { opacity: 0, scale: 0.96 }}
+          initial={reduced ? false : { opacity: 0, scale: 0.97 }}
           animate={reduced ? undefined : { opacity: 1, scale: 1 }}
           transition={{ duration: 0.7, delay: 0.1, ease: "easeOut" }}
           className="relative"
         >
-          <SceneHero3D />
+          <HeroVisual reduced={!!reduced} />
         </motion.div>
       </div>
     </section>
+  );
+}
+
+/**
+ * Visual do hero: painel com a curva fluida do símbolo da logo em gradiente,
+ * um preview do produto (sessão registrada na maca) e chips flutuantes.
+ */
+function HeroVisual({ reduced }: { reduced: boolean }) {
+  return (
+    <div className="relative mx-auto aspect-[10/9] w-full max-w-[560px]">
+      {/* Painel de fundo */}
+      <div className="absolute inset-0 overflow-hidden rounded-[2.5rem] border border-border/60 bg-soft-gradient shadow-xl shadow-primary/10">
+        {/* Curva da marca — eco do símbolo da logo */}
+        <svg
+          viewBox="0 0 560 504"
+          className="absolute inset-0 h-full w-full"
+          aria-hidden="true"
+          role="presentation"
+          fill="none"
+        >
+          <defs>
+            <linearGradient id="hero-swoosh" x1="0" y1="504" x2="560" y2="0">
+              <stop offset="0" stopColor="oklch(0.61 0.155 245.5)" />
+              <stop offset="1" stopColor="oklch(0.427 0.125 251)" />
+            </linearGradient>
+          </defs>
+          {/* Asa: grossa e arredondada à esquerda, afinando até a ponta
+              superior direita — a mesma silhueta do símbolo da marca. */}
+          <path
+            d="M60 392 C 26 330, 58 254, 138 244 C 226 233, 304 206, 396 142 C 450 104, 500 68, 546 34
+               C 508 100, 456 172, 386 240 C 300 324, 196 428, 120 440 C 84 446, 70 424, 60 392 Z"
+            fill="url(#hero-swoosh)"
+            opacity="0.16"
+          />
+        </svg>
+      </div>
+
+      {/* Ícone da marca */}
+      <motion.div
+        initial={reduced ? false : { opacity: 0, y: -8 }}
+        animate={reduced ? undefined : { opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.35 }}
+        className="absolute right-8 top-8"
+      >
+        <Image
+          src="/brand/icon-tile-dark.png"
+          alt=""
+          width={64}
+          height={64}
+          priority
+          className="block size-14 drop-shadow-lg sm:size-16 dark:hidden"
+        />
+        <Image
+          src="/brand/icon-tile-light.png"
+          alt=""
+          width={64}
+          height={64}
+          priority
+          className="hidden size-14 drop-shadow-lg sm:size-16 dark:block"
+        />
+      </motion.div>
+
+      {/* Preview do produto: sessão registrada na maca */}
+      <motion.div
+        initial={reduced ? false : { opacity: 0, y: 16 }}
+        animate={reduced ? undefined : { opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.25 }}
+        className="absolute inset-x-6 bottom-6 top-auto rounded-2xl border border-border/60 bg-card/95 shadow-2xl shadow-primary/15 backdrop-blur sm:inset-x-10 sm:bottom-10"
+      >
+        <div className="flex items-center justify-between border-b border-border/60 px-4 py-2.5">
+          <span className="text-xs font-medium text-foreground">Sessão de hoje · Aluna M.S.</span>
+          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+            Reformer
+          </span>
+        </div>
+        <div className="space-y-1.5 p-3">
+          {[
+            { ex: "Footwork · 1ª série", detalhe: "2 molas vermelhas · 10 reps", eva: "3 → 1" },
+            { ex: "Hundred", detalhe: "1 mola vermelha · 100 reps", eva: "2 → 0" },
+            { ex: "Spine Stretch Forward", detalhe: "sem molas · 6 reps", eva: "0 → 0" },
+          ].map((row) => (
+            <div
+              key={row.ex}
+              className="flex items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/70 px-3 py-1.5 text-xs"
+            >
+              <div className="min-w-0">
+                <div className="truncate font-medium text-foreground">{row.ex}</div>
+                <div className="truncate text-[10px] text-muted-foreground">{row.detalhe}</div>
+              </div>
+              <span className="shrink-0 rounded-md bg-success/10 px-1.5 py-0.5 font-mono text-[10px] font-medium text-success">
+                EVA {row.eva}
+              </span>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Chips flutuantes */}
+      <motion.div
+        initial={reduced ? false : { opacity: 0, x: -10 }}
+        animate={reduced ? undefined : { opacity: 1, x: 0 }}
+        transition={{ duration: 0.5, delay: 0.5 }}
+        className="absolute left-4 top-10 flex items-center gap-2 rounded-full border border-border/60 bg-card/95 px-3 py-1.5 text-xs font-medium shadow-lg shadow-primary/10 backdrop-blur sm:left-6 sm:top-14"
+      >
+        <SparkleIcon weight="fill" className="size-3.5 text-primary" />
+        Relatório com fontes citadas
+      </motion.div>
+
+      <motion.div
+        initial={reduced ? false : { opacity: 0, x: 10 }}
+        animate={reduced ? undefined : { opacity: 1, x: 0 }}
+        transition={{ duration: 0.5, delay: 0.65 }}
+        className="absolute right-4 top-[38%] flex items-center gap-2 rounded-full border border-border/60 bg-card/95 px-3 py-1.5 text-xs font-medium shadow-lg shadow-primary/10 backdrop-blur sm:right-8"
+      >
+        <TrendUpIcon weight="bold" className="size-3.5 text-success" />
+        EVA lombar 6 → 2
+      </motion.div>
+
+      <motion.div
+        initial={reduced ? false : { opacity: 0, y: 10 }}
+        animate={reduced ? undefined : { opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.8 }}
+        className="absolute left-6 top-[30%] hidden items-center gap-2 rounded-full border border-border/60 bg-card/95 px-3 py-1.5 text-xs font-medium shadow-lg shadow-primary/10 backdrop-blur sm:flex"
+      >
+        <CheckCircleIcon weight="fill" className="size-3.5 text-success" />
+        Você aprova antes de enviar
+      </motion.div>
+    </div>
   );
 }

@@ -1,3 +1,4 @@
+import { SectionHeading } from "@/components/landing/section-heading";
 import { Reveal, StaggerItem, StaggerList } from "@/components/motion";
 import { textos } from "@/lib/textos";
 
@@ -6,17 +7,12 @@ export function HowItWorks() {
     <section id="como-funciona" className="bg-background py-20 sm:py-28">
       <div className="mx-auto max-w-[1400px] px-6 sm:px-10 lg:px-16">
         <Reveal>
-          <div className="mb-12 flex flex-col items-center gap-3 text-center sm:mb-16">
-            <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium uppercase tracking-wider text-primary">
-              {textos.landing.howItWorks.eyebrow}
-            </span>
-            <h2 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
-              {textos.landing.howItWorks.titulo}
-            </h2>
-            <p className="max-w-2xl text-base text-muted-foreground sm:text-lg">
-              {textos.landing.howItWorks.subtitulo}
-            </p>
-          </div>
+          <SectionHeading
+            eyebrow={textos.landing.howItWorks.eyebrow}
+            titulo={textos.landing.howItWorks.titulo}
+            subtitulo={textos.landing.howItWorks.subtitulo}
+            className="mb-12 sm:mb-16"
+          />
         </Reveal>
 
         <StaggerList className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">

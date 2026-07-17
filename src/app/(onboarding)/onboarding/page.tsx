@@ -12,7 +12,7 @@ export default async function OnboardingPage() {
         <h1 className="text-xl font-semibold">Bem-vinda! 👋</h1>
         <p className="text-sm text-muted-foreground">
           Complete seu perfil para começar a usar o{" "}
-          <span className="font-medium">FisioPilates</span>.
+          <span className="font-medium">FísioPilates</span>.
         </p>
       </div>
       <OnboardingForm defaultFullName={profile.full_name} defaultStudioName={tenant.name} />

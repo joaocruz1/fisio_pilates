@@ -29,6 +29,23 @@ export function FinalCTA() {
                 maskImage: "radial-gradient(closest-side, black, transparent 80%)",
               }}
             />
+            {/* Curva da marca — eco do símbolo da logo */}
+            <svg
+              viewBox="0 0 1200 400"
+              className="pointer-events-none absolute inset-0 h-full w-full"
+              aria-hidden="true"
+              role="presentation"
+              fill="none"
+              preserveAspectRatio="none"
+            >
+              <path
+                d="M-40 360 C 260 420, 520 300, 720 210 C 900 130, 1040 80, 1260 -20"
+                stroke="white"
+                strokeWidth="90"
+                strokeLinecap="round"
+                opacity="0.06"
+              />
+            </svg>
 
             <div className="relative flex flex-col items-start gap-6 lg:flex-row lg:items-center lg:justify-between">
               <div className="max-w-2xl">

@@ -127,7 +127,7 @@ export default async function ImprimirRelatorioPage({
         </p>
 
         <footer className="mt-4 border-t border-slate-200 pt-3 text-center text-[11px] text-slate-400">
-          {tenant.name ?? "FisioPilates"} · Documento gerado no FisioPilates
+          {tenant.name ?? "FísioPilates"} · Documento gerado no FísioPilates
         </footer>
       </div>
     </>

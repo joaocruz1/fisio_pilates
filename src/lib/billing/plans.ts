@@ -59,7 +59,7 @@ export const PLANOS: Record<PlanId, Plano> = {
   free: {
     id: "free",
     nome: "Gratuito",
-    descricao: "Para experimentar o FisioPilates.",
+    descricao: "Para experimentar o FísioPilates.",
     precoCentavosBRL: 0,
     stripePriceId: null,
     limiteAlunos: 3,
@@ -156,8 +156,8 @@ export const PLANOS: Record<PlanId, Plano> = {
   },
   vitalicio: {
     id: "vitalicio",
-    nome: "Vitalício (cortesia)",
-    descricao: "Acesso completo, sem cobrança. Concedido pela equipe.",
+    nome: "Premium",
+    descricao: "Acesso completo a todos os recursos, sem limites.",
     precoCentavosBRL: 0,
     stripePriceId: null,
     limiteAlunos: null,
@@ -167,7 +167,12 @@ export const PLANOS: Record<PlanId, Plano> = {
     limiteUsuarias: 1,
     trialDias: 0,
     permiteMudar: false,
-    destaques: ["Acesso total sem custo", "Sem necessidade de cartão"],
+    destaques: [
+      "Alunas ilimitadas",
+      "Mensagens no chat ilimitadas",
+      "Relatórios de IA ilimitados",
+      "Fotos posturais ilimitadas",
+    ],
   },
 };
 

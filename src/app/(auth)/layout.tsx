@@ -1,5 +1,5 @@
-import { SparkleIcon } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
+import { LogoMarca } from "@/components/brand/logo";
 import { textos } from "@/lib/textos";
 
 /**
@@ -27,11 +27,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <span className="pointer-events-none absolute -bottom-20 -left-10 size-72 rounded-full bg-white/10 blur-3xl" />
         <span className="pointer-events-none absolute top-1/3 right-1/4 size-40 rounded-full bg-white/5 blur-2xl" />
 
-        <Link href="/" className="relative z-10 inline-flex w-fit items-center gap-2">
-          <span className="flex size-9 items-center justify-center rounded-xl bg-white/15">
-            <SparkleIcon weight="fill" className="size-5" />
-          </span>
-          <span className="font-heading text-xl font-semibold">{textos.app.nome}</span>
+        <Link href="/" className="relative z-10 inline-flex w-fit" aria-label={textos.app.nome}>
+          <LogoMarca tamanho={36} wordmark="claro" classNameNome="text-xl" prioridade />
         </Link>
 
         <div className="relative z-10 max-w-sm">
@@ -59,11 +56,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
       {/* Formulário */}
       <div className="flex flex-col items-center justify-center gap-6 p-6 sm:p-10">
-        <Link href="/" className="inline-flex items-center gap-2 lg:hidden">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-brand-gradient text-primary-foreground">
-            <SparkleIcon weight="fill" className="size-4" />
-          </span>
-          <span className="font-heading text-lg font-semibold">{textos.app.nome}</span>
+        <Link href="/" className="inline-flex lg:hidden" aria-label={textos.app.nome}>
+          <LogoMarca tamanho={32} prioridade />
         </Link>
         <div className="w-full max-w-sm">{children}</div>
       </div>

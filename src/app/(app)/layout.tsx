@@ -17,6 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       userName={profile.full_name}
       tourPending={!profile.tour_completed_at}
       primeiroAlunoId={primeiroAlunoId}
+      temaDaConta={profile.theme}
     >
       {children}
     </AppShell>
