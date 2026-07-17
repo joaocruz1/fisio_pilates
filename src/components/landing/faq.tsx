@@ -1,4 +1,4 @@
-import { SectionHeading } from "@/components/landing/section-heading";
+import { CabecalhoSecao, Secao } from "@/components/landing/secao";
 import { Reveal } from "@/components/motion";
 import {
   Accordion,
@@ -8,37 +8,33 @@ import {
 } from "@/components/ui/accordion";
 import { textos } from "@/lib/textos";
 
+const t = textos.landing.faq;
+
+/**
+ * As cinco objeções que decidem a confiança: onde o dado mora, se a IA lê o
+ * nome do paciente, se ela decide por você, de onde vem o que ela escreve, e se
+ * dá para sair. As três que saíram (preço de token, limite de fotos, plano de
+ * time) são dúvidas de depois de criar a conta.
+ */
 export function FAQ() {
   return (
-    <section id="faq" className="bg-muted/30 py-20 sm:py-28">
-      <div className="mx-auto max-w-3xl px-4 sm:px-6">
-        <Reveal>
-          <SectionHeading
-            eyebrow={textos.landing.faq.eyebrow}
-            titulo={textos.landing.faq.titulo}
-            className="mb-10 sm:mb-14"
-          />
-        </Reveal>
+    <Secao id="faq">
+      <CabecalhoSecao eyebrow={t.campo} titulo={t.titulo} centrado />
 
-        <Reveal>
-          <Accordion
-            type="single"
-            collapsible
-            className="rounded-2xl border border-border/60 bg-card px-4 shadow-sm sm:px-6"
-          >
-            {textos.landing.faq.itens.map((item, i) => (
-              <AccordionItem
-                // biome-ignore lint/suspicious/noArrayIndexKey: lista estática
-                key={i}
-                value={`item-${i}`}
-              >
-                <AccordionTrigger>{item.q}</AccordionTrigger>
-                <AccordionContent>{item.a}</AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </Reveal>
-      </div>
-    </section>
+      <Reveal className="mx-auto mt-12 max-w-3xl">
+        <Accordion type="single" collapsible className="w-full">
+          {t.itens.map((item) => (
+            <AccordionItem key={item.q} value={item.q} className="border-border/60">
+              <AccordionTrigger className="text-left text-base font-medium">
+                {item.q}
+              </AccordionTrigger>
+              <AccordionContent className="text-[0.9375rem] leading-relaxed text-muted-foreground">
+                {item.a}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      </Reveal>
+    </Secao>
   );
 }

@@ -47,6 +47,14 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  /* Landing ("A Aferição"). Prefixo --lp-*: nada aqui é consumido pela área
+     logada. Ver o bloco de tokens em :root. */
+  --color-lp-fio: var(--lp-fio);
+  --color-lp-grafite: var(--lp-grafite);
+  --color-lp-folha: var(--lp-folha);
+  --color-lp-marca-texto: var(--lp-marca-texto);
+  --color-lp-pendente: var(--lp-pendente);
+  --font-lp: var(--font-lp-display);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -115,6 +123,18 @@
   /* Scrim de modais e do tour. No escuro precisa ser mais opaco, não menos:
      sobra pouca faixa dinâmica abaixo de um fundo já escuro. */
   --overlay: oklch(0.2 0.03 258 / 0.35);
+
+  /* ===== Landing "A Aferição" — aditivos, escopo landing =====
+     A página é uma aferição: um fio de prumo é a referência, tudo pendura nele,
+     e o único elemento fora do prumo é o rascunho — que ela apruma assinando.
+     Nenhum token acima muda de valor; a área logada não se move. O azul da
+     marca (--primary) não é repintado, é ressignificado: aqui ele é a tinta
+     que assina, e só aparece onde há assinatura, link ou ação. */
+  --lp-fio: oklch(0.86 0.01 246); /* o eixo, os ticks, as divisórias de campo */
+  --lp-grafite: oklch(0.485 0.022 250); /* rótulo de campo, dado, legenda */
+  --lp-folha: oklch(1 0 0); /* a superfície do relatório */
+  --lp-marca-texto: oklch(0.925 0.135 96); /* o realce: marca-texto, não warning */
+  --lp-pendente: oklch(0.545 0.125 76); /* borda e selo enquanto aguarda ela */
 }
 
 /* ===== Tema escuro =====
@@ -166,6 +186,17 @@
   --gradient-brand: linear-gradient(135deg, oklch(0.66 0.15 245.5), oklch(0.47 0.13 249));
   --gradient-soft: linear-gradient(135deg, oklch(0.26 0.035 250), oklch(0.28 0.038 235));
   --overlay: oklch(0.1 0.02 258 / 0.65);
+
+  /* Landing no escuro. Não é "inverter os tokens claros": é outra hora do dia.
+     No claro a página é papel e a folha é papel — o que as separa é 1px de fio.
+     No escuro a página é a sala às 21h e a folha é o que está sob o abajur, por
+     isso --lp-folha (0.255) é MAIS clara que --background (0.165). É a mesma
+     regra da escada acima: no escuro a elevação se comunica por luminância. */
+  --lp-fio: oklch(0.34 0.014 252);
+  --lp-grafite: oklch(0.735 0.016 250);
+  --lp-folha: oklch(0.255 0.014 254);
+  --lp-marca-texto: oklch(0.52 0.1 92);
+  --lp-pendente: oklch(0.8 0.115 84);
 }
 
 /* ===== Rota de impressão: papel é branco =====
@@ -200,6 +231,15 @@
   }
   html {
     @apply font-sans;
+    /* As âncoras da landing davam pulo seco. Vale para o app inteiro — é o preço
+       do fix, e é o comportamento que já se espera de um link para #id. O
+       scroll-mt de cada alvo vem do primitivo <Secao>, não de cada seção. */
+    scroll-behavior: smooth;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
   }
   h1,
   h2,
@@ -207,6 +247,12 @@
   h4 {
     font-family: var(--font-display), var(--font-geist-sans), ui-sans-serif, sans-serif;
     letter-spacing: -0.012em;
+  }
+
+  /* Na landing os headings falam com a voz dela (Archivo), não com a do
+     dashboard (Sora). Sobrescreve a regra de h1–h4 acima por especificidade. */
+  [data-landing] :is(h1, h2, h3, h4) {
+    font-family: var(--font-lp-display), var(--font-geist-sans), ui-sans-serif, sans-serif;
   }
 }
 
@@ -223,6 +269,36 @@
     background-clip: text;
     color: transparent;
   }
+  /* A folha do hero entra uma vez, como papel saindo da impressora. */
+  @keyframes lp-imprime {
+    from {
+      opacity: 0;
+      clip-path: inset(0 0 100% 0);
+    }
+    to {
+      opacity: 1;
+      clip-path: inset(0 0 0 0);
+    }
+  }
+  .lp-imprime {
+    animation: lp-imprime 520ms cubic-bezier(0.16, 1, 0.3, 1) 200ms both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .lp-imprime {
+      animation: none;
+    }
+  }
+
+  /* font-stretch-[82%] existe no Tailwind 4.1+, mas a compressão é estrutural
+     aqui (o rótulo tem que caber na coluna estreita à direita do eixo), então
+     não fica refém de utility arbitrária. */
+  .lp-condensado {
+    font-stretch: 82%;
+  }
+  .lp-normalizado {
+    font-stretch: 96%;
+  }
+
   /* Cores fixas do wordmark da logo ("Físio" azul-céu, "Pilates" marinho) */
   .text-brand-sky {
     color: oklch(0.61 0.155 245.5);

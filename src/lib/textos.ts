@@ -187,138 +187,133 @@ export const textos = {
   },
   landing: {
     nav: {
-      recursos: "Recursos",
-      comoFunciona: "Como funciona",
+      relatorio: "O relatório",
+      avaliacao: "A avaliação",
       planos: "Planos",
       faq: "Perguntas",
       entrar: "Entrar",
-      comecarGratis: "Começar grátis",
+      criarConta: "Criar conta",
       abrirMenu: "Abrir menu",
       fecharMenu: "Fechar menu",
     },
-    hero: {
-      eyebrow: "Fisio · IA · Brasil",
-      h1: "A clínica de Pilates da fisioterapeuta autônoma, com IA que cita a fonte e você aprova.",
-      sub: "Cadastro, avaliação, sessão, documentos e relatórios de evolução — tudo no seu celular, na maca. Conformidade LGPD de verdade, dados hospedados em São Paulo.",
-      ctaPrimario: "Começar grátis",
-      ctaSecundario: "Ver planos",
-      seloTrial: "14 dias grátis · sem cartão",
-      seloBrasil: "100% no Brasil",
+    meta: {
+      titulo: "FísioPilates · o relatório de evolução chega escrito. Você assina.",
+      descricao:
+        "Você anota a sessão no celular, na maca. No fim do mês o relatório de evolução já está em rascunho, mostrando de onde tirou cada frase. Você lê, corrige e assina.",
     },
-    socialProof: {
-      lgpd: "LGPD-ready",
-      brasil: "Hospedagem 100% no Brasil · sa-east-1",
-      pseudo: "Pseudonimização antes da IA",
-      crefito: "Pensado para fisioterapeutas CREFITO",
+    identificacao: {
+      campo: "Identificação",
+      eyebrow: "Pilates clínico com IA",
+      // A quebra é de respiração, não de largura: as duas orações são espelhadas.
+      h1a: "O relatório chega escrito.",
+      h1b: "Quem assina é você.",
+      sub: "Você anota a sessão no celular, ali na maca, entre um atendimento e outro. No fim do mês o relatório de evolução já está em rascunho, mostrando de onde tirou cada frase. Você lê, corrige e assina.",
+      ctaPrimario: "Abrir a primeira ficha",
+      ctaSecundario: "Ver um relatório de exemplo",
+      selo: "14 dias, sem cartão. Seus dados ficam em São Paulo.",
+      seloTrial: "14 dias grátis, sem cartão",
+      seloDados: "Seus dados ficam em São Paulo",
     },
-    features: {
-      eyebrow: "Tudo o que você precisa",
-      titulo: "Da anamnese ao relatório de evolução, num só lugar.",
-      subtitulo:
-        "Construído para a rotina da fisioterapeuta autônoma que atende Pilates — do celular na maca ao relatório de fim de mês.",
-      itens: {
-        alunos: {
-          titulo: "Gestão de alunas",
-          desc: "Cadastro, anamnese, contato direto por WhatsApp. Tudo organizado por aluna, sem planilha solta.",
-        },
-        avaliacao: {
-          titulo: "Avaliação clínica",
-          desc: "Anamnese, postural, testes, EVA de dor. Reavaliações viram histórico versionado — nada se perde.",
-        },
-        sessoes: {
-          titulo: "Sessões de Pilates",
-          desc: "Aparelho, molas, séries, reps, dor pré e pós. Com o atalho “Repetir última sessão” em 2 minutos.",
-        },
-        agenda: {
-          titulo: "Agenda integrada",
-          desc: "Visualize a semana, marque retornos, saiba quem está há 15+ dias sem sessão.",
-        },
-        documentos: {
-          titulo: "Documentos e fotos",
-          desc: "Exames, laudos, termos e fotos posturais — upload com signed URL, sem passar pelo seu servidor.",
-        },
-        kb: {
-          titulo: "Base de conhecimento (RAG)",
-          desc: "Suba seus livros e apostilas. A IA passa a responder com base neles, citando a página.",
-        },
-        relatorios: {
-          titulo: "Relatórios com IA",
-          desc: "Um clique gera rascunho estruturado com fontes citadas. Você revisa e aprova antes de entregar.",
-        },
-        chat: {
-          titulo: "Chat assistente",
-          desc: "Tire dúvidas técnicas em linguagem natural, com citações da sua base e da literatura.",
-        },
-        vision: {
-          titulo: "Análise postural (Vision)",
-          desc: "Suba até 6 fotos posturais e a IA escreve a seção postural do relatório de evolução.",
-        },
-      },
+    confianca: {
+      lgpd: { titulo: "LGPD de verdade", desc: "Dado de saúde tratado como dado de saúde." },
+      brasil: { titulo: "Dados em São Paulo", desc: "Nada clínico sai do país." },
+      pseudo: { titulo: "Sem o nome do paciente", desc: "A IA recebe “aluno 47”, nunca o nome." },
+      humano: { titulo: "Você assina", desc: "Nada sai sem a sua aprovação." },
     },
-    featureDetail: {
-      bloco1: {
-        eyebrow: "Rotina clínica",
-        titulo: "Registre uma sessão em menos de 2 minutos.",
-        desc: "O fluxo foi desenhado para o uso com celular em pé, ao lado da maca. “Repetir última sessão” reaplica exercício, aparelho, molas e carga com um toque — você só ajusta o que mudou.",
+    vitrine: {
+      eyebrow: "Por dentro",
+      titulo: "Cada resposta mostra de onde veio.",
+      sub: "O mesmo motor que escreve o relatório responde as suas dúvidas — sempre citando a página do material, nunca inventando.",
+      assistente: {
+        eyebrow: "Assistente",
+        titulo: "Um assistente que cita a fonte.",
+        desc: "Pergunte em português, do jeito que você pensa. A resposta vem apoiada na sua base de conhecimento e na literatura, com a página de onde saiu — para você conferir antes de confiar.",
         bullets: [
-          "Aparelho (reformer, cadillac, chair, barrel, mat)",
-          "Molas e carga salvas por exercício",
-          "Dor pré e pós-sessão em EVA 0–10",
-          "Plano da próxima aula sugerido pela IA",
+          "Responde com base no que você subiu",
+          "Cada afirmação traz a fonte",
+          "Nunca aparece para os seus alunos",
         ],
       },
-      bloco2: {
-        eyebrow: "Relatórios com IA",
-        titulo: "Relatórios que citam a fonte — e você aprova.",
-        desc: "A IA lê a ficha pseudonimizada da aluna, busca na sua base de conhecimento e escreve um rascunho estruturado: resumo executivo, evolução no Pilates, evolução postural, pontos de atenção e sugestões. Cada afirmação vem com chip clicável [KB-1] para você conferir.",
+      base: {
+        eyebrow: "Base de conhecimento",
+        titulo: "Seus livros viram a memória da IA.",
+        desc: "Suba os PDFs e apostilas que você já tem. O sistema divide em trechos, indexa e passa a responder com base neles — a base da plataforma já vem com 78 materiais clínicos.",
         bullets: [
-          "Estrutura fixa validada por Zod — sem alucinação de layout",
-          "Citação de fontes da sua base pessoal",
-          "Cache por período: nada mudou? Não cobramos de novo",
-          "Rascunho → revisão → aprovação (humano no circuito)",
-        ],
-      },
-      bloco3: {
-        eyebrow: "Vision posturale",
-        titulo: "Fotos posturais viram análise clínica.",
-        desc: "Anexe até 6 fotos posturais da aluna (anterior, posterior, lateral). A IA descreve a postura, sugere pontos de atenção e alimenta automaticamente a seção postural do relatório de evolução — sempre com você revisando.",
-        bullets: [
-          "Pré-processamento automático (até 1568px)",
-          "Signed URL de 5 minutos — link não vaza",
-          "Integração direta com o relatório da aluna",
-          "Consentimento LGPD bloqueante",
+          "78 materiais clínicos já inclusos",
+          "Suba os seus, indexados em minutos",
+          "Só materiais que você possui legalmente",
         ],
       },
     },
-    howItWorks: {
-      eyebrow: "Como funciona",
-      titulo: "Comece a usar em quatro passos.",
-      subtitulo:
-        "Sem instalação, sem treinamento. Você sobe alunas e a IA aprende sua base enquanto você atende.",
-      passos: [
+    evolucao: {
+      campo: "Evolução",
+      cabecalho: "Aluno 47 · 3ª sessão · junho",
+      ajuda: "Toque em uma marca para ver de onde a frase veio.",
+      partes: [
+        { texto: "Na 3ª sessão em reformer, com molas azul e vermelha, executou " },
+        { citado: "footwork 3×10 sem dor referida", fonte: "KB-1" },
+        { texto: ". A EVA caiu de 6 para 3, consistente com " },
         {
-          titulo: "Crie sua conta",
-          desc: "E-mail, aceite de LGPD e um onboarding curto com nome, CREFITO e estúdio. Tudo em menos de 3 minutos.",
+          citado: "ganho de controle motor de tronco entre o 3º e o 5º atendimento",
+          fonte: "KB-2",
         },
-        {
-          titulo: "Importe alunas e documentos",
-          desc: "Cadastre a primeira aluna, anexe a anamnese e suba os exames. O sistema já entende o contexto clínico.",
-        },
-        {
-          titulo: "Suba sua base de conhecimento",
-          desc: "PDFs de livros e apostilas que você já tem. A IA passa a responder com base neles, citando a página.",
-        },
-        {
-          titulo: "Gere o primeiro relatório",
-          desc: "Um clique na aba Evolução. A IA escreve o rascunho, você revisa, ajusta e aprova. Pronto para entregar.",
-        },
+        { texto: "." },
       ],
+      fontes: {
+        "KB-1": {
+          arquivo: "Ficha do aluno · 3ª sessão",
+          local: "sua anotação",
+          trecho: "reformer · azul+verm · footwork 3x10 · sem dor · eva 6→3",
+        },
+        "KB-2": {
+          arquivo: "Kolyniak, Pilates: método e aplicação clínica",
+          local: "p. 112",
+          trecho:
+            "O controle motor de tronco costuma se estabelecer entre o terceiro e o quinto atendimento, quando a carga é progredida sem dor referida.",
+        },
+      },
+      seloPendente: "rascunho, aguarda você",
+      acaoAssinar: "Aprovar e assinar",
+      seloAssinado: (hora: string) => `assinado por você · hoje, ${hora}`,
+      acaoDesfazer: "desfazer",
+      anuncioAssinado: "Relatório aprovado e assinado.",
+      anuncioDesfeito: "Assinatura desfeita. O relatório voltou a rascunho.",
+      aviso: "Exemplo. O aluno 47 não existe.",
+      verFonte: "ver de onde veio",
+      fecharFonte: "fechar",
+    },
+    prontuario: {
+      campo: "A avaliação",
+      cabecalho: "Aluno 47 · sessão de hoje",
+      h2: "É isto que você digita. O resto vem de graça.",
+      sub: "A ficha de uma aula, do jeito que ela sai do seu dedo em pé ao lado da maca. Foi só disto que o relatório lá em cima nasceu.",
+      ficha: [
+        { rotulo: "aparelho", valor: "reformer" },
+        { rotulo: "molas", valor: "azul + vermelha" },
+        { rotulo: "série", valor: "footwork 3×10" },
+      ],
+      dorAntes: "dor antes",
+      dorDepois: "dor depois",
+      // A escala EVA é a aferição de verdade do produto: um corpo medido contra
+      // uma referência de 0 a 10. Por isso ela é o clímax e não precisa de foto.
+      eva: (valor: number) => `${valor} de 10 na escala de dor`,
+      remate: "Dois minutos de digitação. É isso.",
+    },
+    dados: {
+      campo: "Onde o dado dorme",
+      h2: 'A IA recebe "aluno 47". Nunca o nome do seu paciente.',
+      corpo:
+        "Os dados dos seus alunos ficam em servidores em São Paulo. Antes de qualquer coisa ir para a IA, o nome sai. E ninguém treina modelo nenhum com o que está aí dentro.",
+    },
+    fecho: {
+      h2: "O rascunho é nosso. A assinatura é sua.",
+      honestidade:
+        "Ainda não temos depoimentos. Temos os dados em São Paulo, 14 dias grátis e o relatório de exemplo aí em cima.",
     },
     planos: {
-      eyebrow: "Preços",
-      titulo: "Planos para todo estágio da sua clínica.",
-      subtitulo:
-        "Comece grátis. Faça upgrade quando precisar. Cancele quando quiser — sem letras miúdas.",
+      campo: "Planos",
+      titulo: "Comece grátis. Suba de plano quando fizer sentido.",
+      subtitulo: "Cancele quando quiser. Você continua com acesso até o fim do período pago.",
       badgeMaisPopular: "Mais popular",
       planoAtual: "Seu plano atual",
       contratar: "Contratar",
@@ -327,108 +322,53 @@ export const textos = {
       porMes: "/mês",
       gratis: "Grátis",
       semCobrancaMensal: "Sem cobrança mensal",
-      trialDias: (dias: number) => `${dias} dias grátis · sem cartão`,
+      trialDias: (dias: number) => `${dias} dias grátis, sem cartão`,
       frequencia: {
         mensal: "Mensal",
         anual: "Anual",
         economia: "Economize 20%",
       },
       notaPayg: "Cobrado por uso. Sem mensalidade.",
-    },
-    testimonials: {
-      eyebrow: "Quem usa, recomenda",
-      titulo: "Pensado para a rotina de quem atende Pilates.",
-      subtitulo:
-        "Mais de mil alunas, sessões e relatórios gerados dentro da plataforma. Depoimentos ilustrativos de personas-protótipo do produto.",
-      aviso: "Depoimentos ilustrativos — personas representativas do público-alvo.",
-      items: [
-        {
-          nome: "Dra. Ana Lima",
-          local: "São Paulo · SP",
-          especialidade: "Pilates clínico · coluna",
-          quote:
-            "Em duas semanas eu já não abria mais a planilha. A IA resume a sessão em segundos e o relatório sai pronto — eu só reviso e entrego.",
-        },
-        {
-          nome: "Dra. Carla Mendes",
-          local: "Rio de Janeiro · RJ",
-          especialidade: "Reabilitação pós-cirúrgica",
-          quote:
-            "A base de conhecimento foi o divisor de águas. Subi três livros de Pilates que eu já tinha e o assistente responde com a página certa. Mudou minha prática.",
-        },
-        {
-          nome: "Dra. Beatriz Souza",
-          local: "Belo Horizonte · MG",
-          especialidade: "Pilates para gestantes",
-          quote:
-            "O LGPD de verdade me deu tranquilidade. Saber que nome e CPF nunca saem do meu banco antes de irem à IA foi o que me fez assinar.",
-        },
-      ],
+      notaPreco: "Preços em reais. O pagamento é processado pelo Stripe.",
     },
     faq: {
-      eyebrow: "Dúvidas frequentes",
-      titulo: "Perguntas comuns antes de começar.",
+      campo: "Perguntas",
+      titulo: "O que costumam perguntar antes de assinar.",
       itens: [
         {
-          q: "Meus dados ficam mesmo no Brasil?",
-          a: "Sim. Toda a infraestrutura roda em São Paulo (Vercel gru1 e Supabase sa-east-1). Nenhum dado clínico sai do país, em conformidade com a LGPD para dados sensíveis de saúde.",
+          q: "Os dados dos meus alunos ficam no Brasil?",
+          a: "Ficam. O banco e a aplicação rodam em São Paulo, e nada de clínico sai do país. É o que a LGPD exige para dado de saúde, e é o motivo de termos escolhido São Paulo antes de escolher qualquer outra coisa.",
         },
         {
-          q: "Como funciona a base de conhecimento?",
-          a: "Você sobe PDFs de livros, apostilas e protocolos que já possui legalmente. O sistema extrai o texto, divide em trechos e gera embeddings. Quando você faz uma pergunta, a IA busca nos seus materiais e cita a página de onde tirou a resposta.",
+          q: "A IA lê o nome do meu paciente?",
+          a: 'Não. Antes de qualquer coisa ir para a IA, o nome, o CPF e o contato saem. A IA recebe "aluno 47" e os dados clínicos, escreve o rascunho, e o nome volta aqui do nosso lado. Também desligamos a coleta de dados do provedor: ninguém treina modelo com o que está aqui dentro.',
+        },
+        {
+          q: "A IA decide alguma coisa por mim?",
+          a: "Nenhuma. O relatório nasce rascunho e fica parado até você aprovar. Você lê, corrige o que estiver errado e assina. Se não assinar, ele não vai para lugar nenhum. A responsabilidade clínica continua sendo sua, e o sistema foi desenhado para deixar isso claro.",
+        },
+        {
+          q: "De onde a IA tira o que escreve?",
+          a: "Da ficha do seu aluno e dos materiais que você mesma subiu. Cada frase do rascunho traz uma marca que você toca para ver a origem: a sua anotação da sessão, ou a página do livro que você anexou. Se não houver fonte, ela não afirma.",
         },
         {
           q: "Posso cancelar quando quiser?",
-          a: "Sim. Sem fidelidade, sem multa. Você pode cancelar a qualquer momento pelo portal de gerenciamento e continua com acesso até o fim do período pago. Os dados ficam preservados caso queira voltar.",
-        },
-        {
-          q: "Como é cobrado o uso de IA?",
-          a: "Os planos Essencial, Profissional e Clínica trazem uma cota mensal inclusa de mensagens de chat, relatórios e fotos posturais. No Pay-as-you-go você só paga pelo que usar (R$ 0,10 por mensagem, R$ 3,00 por relatório, R$ 0,50 por foto).",
-        },
-        {
-          q: "A IA substitui minha avaliação?",
-          a: "Nunca. A IA é uma ferramenta de apoio. Os relatórios nascem como rascunho para sua revisão e você sempre aprova antes de entregar. O chat tem aviso permanente de que as decisões clínicas são suas.",
-        },
-        {
-          q: "Como funciona o trial de 14 dias?",
-          a: "Ao assinar qualquer plano pago, você tem 14 dias gratuitos sem cartão de crédito. Pode usar todas as funções. Ao final, decide se quer continuar — se não fizer nada, a conta volta automaticamente para o Gratuito, sem cobrar nada.",
-        },
-        {
-          q: "Posso compartilhar com outras profissionais?",
-          a: "O plano Clínica libera até 5 profissionais no mesmo tenant (estúdio), com isolamento total de dados entre profissionais. Os demais planos são individuais. Multi-profissional com times está na nossa roadmap.",
-        },
-        {
-          q: "Como funciona a análise de fotos posturais?",
-          a: "Você anexa até 6 fotos por análise (anterior, posterior, lateral). O sistema reduz a resolução para 1568px, gera uma URL temporária de 5 minutos e envia ao modelo de visão. A IA descreve a postura e essa descrição entra automaticamente na seção postural do relatório de evolução.",
+          a: "Pode, sem multa e sem falar com ninguém. Você cancela pelo próprio painel e continua com acesso até o fim do período que já pagou. Seus dados ficam guardados caso você volte.",
         },
       ],
     },
-    finalCta: {
-      titulo: "Pronta para transformar a sua clínica?",
-      sub: "Comece grátis. Sem cartão. Em 3 minutos você está com a primeira aluna cadastrada.",
-      ctaPrimario: "Criar conta grátis",
-      ctaSecundario: "Falar com a equipe",
-    },
     footer: {
       produto: "Produto",
-      empresa: "Empresa",
       legal: "Legal",
-      social: "Conecte-se",
       links: {
-        recursos: "Recursos",
+        relatorio: "O relatório",
+        avaliacao: "A avaliação",
         planos: "Planos",
-        comoFunciona: "Como funciona",
-        perguntas: "Perguntas frequentes",
-        sobre: "Sobre",
-        contato: "Contato",
+        perguntas: "Perguntas",
         privacidade: "Política de privacidade",
-        termos: "Termos de uso",
-        lgpd: "LGPD",
-        cookies: "Cookies",
-        status: "Status do sistema",
       },
-      copyright: (ano: number) => `© ${ano} FísioPilates. Todos os direitos reservados.`,
-      feito: "Feito com cuidado no Brasil.",
+      copyright: (ano: number) => `© ${ano} FísioPilates`,
+      feito: "Feito no Brasil, com dados no Brasil.",
     },
   },
   modelo: {
